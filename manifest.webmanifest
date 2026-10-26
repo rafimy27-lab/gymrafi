@@ -1,0 +1,32 @@
+{
+  "name": "Gym Tracker",
+  "short_name": "Gym",
+  "description": "Catat reps tiap alat, pantau kenaikan beban, dan timer istirahat.",
+  "lang": "id",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0E1416",
+  "theme_color": "#0E7C86",
+  "icons": [
+    {
+      "src": "icons/apple-touch-icon.png?v=2",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-192.png?v=2",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png?v=2",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

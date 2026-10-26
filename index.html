@@ -1,0 +1,1550 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gym Tracker</title>
+<meta name="description" content="Catat reps tiap alat, pantau kenaikan beban, dan timer istirahat.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gym">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#EEF3F4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1416" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png?v=2">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<style>
+:root{
+  --bg:#EEF3F4; --surface:#FFFFFF; --surface2:#E3EBED; --ink:#122024; --muted:#5A6E73; --line:#D8E2E4; --track:#DCE6E8;
+  --accent:#0E7C86; --accent-ink:#FFFFFF; --accent-soft:#D6EDEF;
+  --ok:#2A8A57; --ok-bg:#DDF1E5; --ok-ink:#1E6B41;
+  --up:#D9822B; --up-bg:#FADFC0; --up-ink:#8A4B08;
+  --low:#C8402E; --low-bg:#F7DDD7; --low-ink:#A93323;
+  --skip:#7A5AC8; --skip-bg:#ECE6FA; --skip-ink:#5A3FA8; --done-bg:#EAF6EE; --todo:#B4C4C7;
+  --shadow:0 1px 2px rgba(18,32,36,.05),0 10px 28px rgba(18,32,36,.06);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
+  --font-num:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1416; --surface:#162023; --surface2:#1F2C30; --ink:#E4EEF0; --muted:#8FA5AA; --line:#26363A; --track:#26363A;
+    --accent:#4CC9D3; --accent-ink:#06282B; --accent-soft:#12363A;
+    --ok:#58C98A; --ok-bg:#153A26; --ok-ink:#8BE0AF;
+    --up:#F0A55A; --up-bg:#42290F; --up-ink:#F5C48C;
+    --low:#EE7A66; --low-bg:#3E1E18; --low-ink:#F4A191;
+    --skip:#B39CF0; --skip-bg:#2A2244; --skip-ink:#CDBDF7; --done-bg:#12281C; --todo:#46595E;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.25);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1416; --surface:#162023; --surface2:#1F2C30; --ink:#E4EEF0; --muted:#8FA5AA; --line:#26363A; --track:#26363A;
+  --accent:#4CC9D3; --accent-ink:#06282B; --accent-soft:#12363A;
+  --ok:#58C98A; --ok-bg:#153A26; --ok-ink:#8BE0AF;
+  --up:#F0A55A; --up-bg:#42290F; --up-ink:#F5C48C;
+  --low:#EE7A66; --low-bg:#3E1E18; --low-ink:#F4A191;
+  --skip:#B39CF0; --skip-bg:#2A2244; --skip-ink:#CDBDF7; --done-bg:#12281C; --todo:#46595E;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.25);
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+html,body{height:100%;overflow:hidden}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--font);padding-inline:env(safe-area-inset-left) env(safe-area-inset-right);overscroll-behavior:none}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--font-num);font-variant-numeric:tabular-nums}
+#shell{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);display:flex;flex-direction:column;overflow:hidden}
+.top{flex:none;background:var(--bg);padding-top:env(safe-area-inset-top);z-index:20}
+.top-in{max-width:560px;margin:0 auto;padding:10px 16px 8px}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand h1{margin:0;font:700 22px/1.2 var(--font-num);letter-spacing:-.01em}
+.brand>div:first-child{flex:1;min-width:0}
+.sbadge{flex:none;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;font:700 14px var(--font-num);background:var(--ok-bg);color:var(--ok-ink);cursor:pointer}
+.sbadge.near{background:var(--up-bg);color:var(--up-ink)}
+.sbadge.over{background:var(--low-bg);color:var(--low-ink)}
+.brand small{display:block;font:500 12px/1.3 var(--font);color:var(--muted)}
+.iconbtn{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;border:1px solid var(--line);background:var(--surface);padding:0}
+.scroll{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.app{max-width:560px;margin:0 auto;padding:6px 16px 28px;display:flex;flex-direction:column;gap:12px}
+.tabs{flex:none;display:grid;grid-template-columns:repeat(4,1fr);max-width:560px;width:100%;margin:0 auto;background:var(--surface);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom));position:relative;z-index:30}
+.tabs button{display:grid;justify-items:center;gap:2px;padding:6px 0;border:0;background:none;color:var(--muted);font-size:11px;font-weight:600;border-radius:12px}
+.tabs button[aria-current="page"]{color:var(--accent)}
+.kb .tabs{display:none}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+.lbl{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.note{margin:8px 0 0;font-size:13px;color:var(--muted)}
+.dayrow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.dayrow:last-child{border-bottom:0}
+.dayrow .dl{min-width:0;text-align:left;border:0;background:none;padding:0;color:var(--ink);font:inherit}
+.dayrow .dl b{display:block;font-weight:650}
+.dayrow .dl small{display:block;color:var(--muted);font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dayrow .seg button{padding:9px 6px;font-size:14px}
+.dayrow .seg button[data-v="gym"][aria-pressed="true"]{background:var(--done-bg);color:var(--ok-ink)}
+.dayrow .seg button[data-v="rest"][aria-pressed="true"]{background:var(--skip-bg);color:var(--skip-ink)}
+.dayrow .seg button:disabled{opacity:.4}
+.dayhead{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 6px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:3px;background:var(--surface2);border-radius:12px}
+.seg button{border:0;background:none;padding:8px 10px;border-radius:10px;font-weight:600;color:var(--muted)}
+.seg.s3{grid-template-columns:repeat(3,1fr)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.stepper{display:flex;align-items:center;gap:8px;margin-top:8px}
+.stepper .iconbtn{flex:none;width:38px;height:38px;border-radius:50%}
+.stepper .lab{flex:1;min-width:0;position:relative;text-align:center;font-weight:650;padding:6px 4px}
+.stepper .lab input{position:absolute;inset:0;width:100%;height:100%;opacity:0}
+.pill{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--accent)}
+.prog{margin-top:10px}
+.prog .row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:600}
+.bar{height:8px;border-radius:999px;background:var(--track);overflow:hidden;margin-top:6px}
+.bar>i{display:block;height:100%;width:0;border-radius:inherit;background:var(--accent);transition:width .4s ease}
+
+/* baris latihan */
+.wlist{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--shadow)}
+.wrow+.wrow{border-top:1px solid var(--line)}
+.wrow.hidden-ex{opacity:.55}
+.whead{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:0;background:none;text-align:left}
+.whead:active{background:var(--surface2)}
+.no{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--surface2);font:700 12px var(--font-num);color:var(--muted)}
+.wrow{box-shadow:inset 4px 0 0 var(--todo)}
+.wrow .no{background:transparent;border:1.5px solid var(--todo);color:var(--muted)}
+.wrow.done{background:var(--done-bg);box-shadow:inset 4px 0 0 var(--ok)}
+.wrow.done .no{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.wrow.skipped{background:var(--skip-bg);box-shadow:inset 4px 0 0 var(--skip)}
+.wrow.skipped .no{background:transparent;border:1.5px dashed var(--skip);color:var(--skip-ink)}
+.tw{position:relative;flex:none;width:60px;height:60px}
+.tw img{display:block;width:60px;height:60px;object-fit:cover;border-radius:12px;background:var(--surface2)}
+.tw .no{position:absolute;left:-6px;top:-6px;width:22px;height:22px;font-size:11px;background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.wrow.done .tw .no{background:var(--ok);color:var(--surface)}
+.wrow.skipped .tw .no{background:var(--skip-bg)}
+.wrow.skipped .tw img{opacity:.5;filter:grayscale(1)}
+.pics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pics img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:12px;background:var(--surface2)}
+.sumbar{display:flex;gap:8px;flex-wrap:wrap}
+.sumbar span{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font-size:13px;font-weight:650;background:var(--surface);border:1px solid var(--line)}
+.sumbar span::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--todo)}
+.sumbar .d{background:var(--done-bg);color:var(--ok-ink);border-color:transparent}.sumbar .d::before{background:var(--ok)}
+.sumbar .k{background:var(--skip-bg);color:var(--skip-ink);border-color:transparent}.sumbar .k::before{background:var(--skip)}
+.wmain{flex:1;min-width:0;display:block}
+.wn{display:block;font-weight:650;line-height:1.25}
+.wd{display:block;font-size:12px;color:var(--muted);line-height:1.3}
+.wmeta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:5px}
+.pos{font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--surface2);color:var(--muted)}
+.wt{font-weight:700;font-size:14px}
+.wnote{font-size:11px;color:var(--muted)}
+.wright{flex:none;display:grid;justify-items:end;gap:4px}
+.reps{font-weight:700;font-size:14px}
+.chip{display:inline-grid;place-items:center;min-width:26px;height:24px;padding:0 8px;border-radius:999px;font:700 12px var(--font-num);background:var(--surface2);color:var(--muted)}
+.chip.ok{background:var(--ok-bg);color:var(--ok-ink)}
+.chip.up{background:var(--up-bg);color:var(--up-ink)}
+.chip.low{background:var(--low-bg);color:var(--low-ink)}
+.chip.new{background:var(--accent-soft);color:var(--accent)}
+.panel{padding:2px 14px 16px;display:grid;gap:12px}
+.fl{font-size:12px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px}
+.stp{display:grid;grid-template-columns:52px 1fr 52px;gap:8px}
+.stp button{height:48px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:24px;font-weight:600;padding:0}
+.stp input{height:48px;text-align:center;border-radius:12px;border:1px solid var(--line);background:var(--bg);font:700 22px var(--font-num);min-width:0;width:100%}
+.rchips{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.rchips button{height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);font:700 17px var(--font-num);padding:0}
+.rchips button.in{border-color:var(--ok)}
+.rchips button.hi{border-color:var(--up)}
+.rchips button.lo{border-color:var(--low)}
+.rchips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.fb{margin:0;padding:10px 12px;border-radius:12px;font-size:13px;background:var(--surface2);color:var(--ink)}
+.fb.ok{background:var(--ok-bg);color:var(--ok-ink)}
+.fb.up{background:var(--up-bg);color:var(--up-ink)}
+.fb.low{background:var(--low-bg);color:var(--low-ink)}
+.sug{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:var(--up-bg);color:var(--up-ink);font-size:13px}
+.sug button{flex:none;border:0;border-radius:10px;padding:8px 12px;background:var(--up);color:#fff;font-weight:700}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:46px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-weight:650}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.btn.danger{color:var(--low-ink);background:var(--low-bg);border-color:transparent}
+.btn.block{display:flex;width:100%}
+.btn:disabled{opacity:.45}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap}
+.btnrow .btn{flex:1;min-width:110px}
+.empty{margin:0;padding:22px 8px;text-align:center;color:var(--muted)}
+.ghead{display:flex;justify-content:space-between;gap:8px;padding:12px 4px 6px;font-size:13px;font-weight:650;color:var(--muted)}
+.item{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:0;background:none;text-align:left}
+.item+.item{border-top:1px solid var(--line)}
+.item:active{background:var(--surface2)}
+.item .main{flex:1;min-width:0}
+.item .t{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .s{display:block;font-size:12px;color:var(--muted)}
+.item .a{flex:none;font:600 14px var(--font-num);text-align:right}
+.listbox{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.mv{display:flex;gap:4px;flex:none}
+.mv button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--bg);padding:0;font-size:13px}
+.mv button:disabled{opacity:.3}
+.star{color:var(--up);font-size:.85em}
+.mgl{font-weight:650;color:var(--muted)}.mgl.pr{color:var(--up-ink)}
+.mv .grip{display:grid;place-items:center;color:var(--muted);touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.arow{position:relative;background:var(--surface);transition:transform .16s ease}
+.arow.dragging{z-index:6;transition:none;box-shadow:0 10px 28px rgba(0,0,0,.28);border-radius:14px;border-top-color:transparent;background:var(--surface2)}
+.arow.dragging .grip{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.listbox.dragbox{overflow:visible}
+body.dragmode{-webkit-user-select:none;user-select:none;cursor:grabbing}
+.nudge{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-radius:14px;background:var(--up-bg);color:var(--up-ink);font-size:14px}
+.nudge .sp{flex:1;min-width:160px}
+.nudge button{border:0;background:none;padding:4px 6px;font-weight:700;color:inherit;text-decoration:underline}
+.hello h2,.card h2{margin:0 0 10px;font:700 17px/1.25 var(--font-num)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+.stat .lbl{font-size:11px;display:block}
+.stat b{display:block;font:700 17px var(--font-num);margin-top:2px}
+.chart{width:100%;height:auto;display:block}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th,.tbl td{padding:8px 4px;text-align:left;border-top:1px solid var(--line)}
+.tbl th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-top:0}
+.tbl td.n{font-family:var(--font-num);text-align:right}
+/* timer */
+.timer{position:absolute;left:12px;right:12px;bottom:calc(70px + env(safe-area-inset-bottom));max-width:536px;margin:0 auto;z-index:35;display:flex;align-items:center;gap:10px;padding:10px 12px 10px 16px;border-radius:16px;background:var(--ink);color:var(--bg);box-shadow:0 10px 30px rgba(0,0,0,.28)}
+.kb .timer{bottom:12px}
+.timer .tm{flex:1;font:700 24px var(--font-num);letter-spacing:.02em}
+.timer .tl{font-size:11px;opacity:.7;display:block;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.timer button{border:0;border-radius:10px;padding:9px 12px;background:rgba(255,255,255,.16);color:inherit;font-weight:700}
+.timer.done{background:var(--accent);color:var(--accent-ink)}
+.timer .bar{position:absolute;left:0;right:0;bottom:0;height:4px;border-radius:0 0 16px 16px;margin:0;background:rgba(255,255,255,.18)}
+.timer .bar i{background:currentColor;transition:width .25s linear}
+/* toast & sheet */
+.toast{position:absolute;left:16px;right:16px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:40;margin:0 auto;max-width:528px;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--ink);color:var(--bg);font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:rise .28s cubic-bezier(.34,1.4,.64,1)}
+.kb .toast{bottom:14px}
+#shell.rt .toast{bottom:calc(140px + env(safe-area-inset-bottom))}
+.kb #shell.rt .toast,.kb.rt .toast{bottom:80px}
+.toast span{flex:1;min-width:0}
+.toast button{flex:none;border:0;background:none;padding:4px 6px;font-weight:700;color:var(--accent-soft);text-decoration:underline}
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+.sheet-root{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);z-index:60;display:flex;align-items:flex-end;justify-content:center}
+.backdrop{position:absolute;inset:0;background:rgba(6,14,16,.5);animation:fade .2s ease-out}
+.sheet{position:relative;width:min(100%,560px);max-height:94%;overflow:auto;background:var(--surface);border-radius:22px 22px 0 0;padding:8px 18px calc(22px + env(safe-area-inset-bottom));animation:up .3s cubic-bezier(.2,.9,.25,1.05);overscroll-behavior:contain}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:4px auto 10px}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.sheet-head h2{margin:0;font:700 20px var(--font-num);flex:1}
+@keyframes up{from{transform:translateY(40px);opacity:.6}to{transform:none;opacity:1}}
+.pop-root{align-items:center;padding:0 24px}
+.pop{position:relative;width:min(100%,340px);background:var(--surface);border-radius:24px;padding:26px 22px 20px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.3);animation:pop .38s cubic-bezier(.34,1.56,.64,1) both}
+.pop h2{margin:14px 0 2px;font:700 20px var(--font-num)}
+.pop .pbig{font:800 44px/1.1 var(--font-num);font-variant-numeric:tabular-nums;margin:6px 0 4px}
+.pop .pbig.ok{color:var(--ok-ink,var(--accent))}.pop .pbig.over{color:var(--up-ink)}
+.pop p{margin:0 0 16px;color:var(--muted);font-size:14px}
+.pop .btnrow{display:flex;gap:10px}.pop .btnrow .btn{flex:1}
+.pop .tick{width:64px;height:64px;display:block;margin:0 auto;animation:tickpop .5s .12s cubic-bezier(.34,1.56,.64,1) both}
+.pop .tick circle{fill:var(--accent);}
+.pop .tick path{fill:none;stroke:#fff;stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:30;stroke-dashoffset:30;animation:draw .35s .38s ease-out forwards}
+@keyframes pop{from{opacity:0;transform:scale(.8) translateY(10px)}to{opacity:1;transform:none}}
+@keyframes tickpop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.field{display:grid;gap:6px;margin-bottom:14px}
+.field>label{font-size:12px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.field input,.field select,.field textarea{width:100%;min-height:46px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:16px}
+.field .hint{font-size:12px;color:var(--muted)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.field{min-width:0}
+.field input{box-sizing:border-box;min-width:0;max-width:100%;display:block}
+.field input[type=time],.field input[type=date]{-webkit-appearance:none;appearance:none;text-align:center;line-height:1.2}
+.field input[type=time]::-webkit-date-and-time-value{text-align:center;margin:0}
+.sheet .note+.two{margin-top:16px}
+.sheet .warnbox{margin:0 0 14px}
+.sheet .two+.warnbox{margin-top:2px}
+.setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 2px;border-top:1px solid var(--line)}
+.setrow:first-child{border-top:0}
+.setrow .sub{display:block;font-size:12px;color:var(--muted)}
+.setrow select{min-height:38px;border-radius:10px;border:1px solid var(--line);background:var(--bg);padding:4px 10px;font-size:16px}
+.sect{margin:6px 0 8px;font:700 13px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.warnbox{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--up-bg);color:var(--up-ink);font-size:13px}
+.wrow.skipped .wn,.wrow.skipped .wt{text-decoration:line-through;text-decoration-thickness:1px;opacity:.6}
+.chip.skip{background:var(--skip-bg);border:1px dashed var(--skip);color:var(--skip-ink)}
+.sesscard .bigclock{font-size:44px;font-weight:700;line-height:1.1;margin:4px 0 10px;letter-spacing:.01em}
+.bigclock.ok{color:var(--ok-ink)}.bigclock.near{color:var(--up-ink)}.bigclock.over{color:var(--low-ink)}
+.bar>i.near{background:var(--up)}.bar>i.over{background:var(--low)}
+.choice h2{margin:0 0 6px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:14px}
+.cwd{text-align:center;font-size:11px;font-weight:650;color:var(--muted)}
+.cd{aspect-ratio:1;min-width:0;display:grid;place-items:center;align-content:center;gap:0;padding:0;border-radius:12px;border:1.5px solid transparent;background:var(--bg);color:var(--ink)}
+.cd b{font-size:13px;line-height:1.1}
+.cd small{font:700 10px/1.1 var(--font-num);min-height:11px;color:var(--muted)}
+.cd.out{opacity:.35}
+.cd.today{border-color:var(--accent)}
+.cd.g{background:var(--accent);color:var(--accent-ink)}
+.cd.g small{color:inherit}
+.cd.g0{border:1.5px dashed var(--accent)}
+.cd.r{background:var(--surface2)}
+/* calisthenics */
+.prio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.prio button{height:50px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg);font:700 16px var(--font);color:var(--ink)}
+.prio button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.choice .cgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.choice .cgrid .wide{grid-column:1/-1}
+.dayrow .seg{width:204px;grid-template-columns:repeat(3,1fr)}
+.dayrow .seg button[data-v="cali"][aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.cd.c{background:var(--accent-soft);color:var(--accent);border-color:var(--accent)}
+.cd.c small{color:inherit}
+.cd.c0{border:1.5px dashed var(--accent);color:var(--accent)}
+.cali .routine{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 6px}
+.cali .cmv{background:var(--surface2);border-radius:14px;padding:10px 4px;text-align:center;min-width:0}
+.cali .cmv b{display:block;font:700 28px/1 var(--font-num)}
+.cali .cmv span{display:block;font-size:12px;color:var(--muted);margin-top:5px;font-weight:600}
+.cali .crow{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:14px}
+.cali .bigclock{font-size:52px;font-weight:700;line-height:1;letter-spacing:.01em;margin:4px 0 0}
+.cali .bigclock.over{color:var(--low-ink)}.cali .bigclock.near{color:var(--up-ink)}.cali .bigclock.idle{color:var(--ink)}
+.cali .rcount{text-align:right;flex:none}
+.cali .rcount b{display:block;font:800 52px/1 var(--font-num);color:var(--accent)}
+.cali .rcount b.bump{animation:bump .26s ease}
+.cali .rcount span{font-size:12px;color:var(--muted);font-weight:600}
+@keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
+.lapbtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:104px;margin-top:14px;border:0;border-radius:22px;background:var(--accent);color:var(--accent-ink);font:800 30px var(--font-num);letter-spacing:.01em;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;box-shadow:0 8px 22px rgba(14,124,134,.28);transition:transform .08s ease}
+.lapbtn:active{transform:scale(.97)}
+.lapbtn.go{min-height:76px;font-size:24px}
+.lapbtn:disabled{opacity:.45;box-shadow:none}
+.cali .btnrow{margin-top:10px}
+.cali .btnrow .btn{min-width:0;padding:0 6px;font-size:14px;white-space:nowrap}
+.cali .rstep{display:grid;grid-template-columns:52px 1fr 52px;align-items:center;gap:10px;margin-top:14px}
+.cali .rstep .iconbtn{width:52px;height:52px;border-radius:16px;font:700 26px var(--font-num);color:var(--ink)}
+.cali .rstep .mid{text-align:center}
+.cali .rstep .mid b{display:block;font:800 46px/1 var(--font-num);color:var(--accent)}
+.cali .rstep .mid span{font-size:12px;color:var(--muted);font-weight:600}
+.laps{list-style:none;margin:12px 0 0;padding:0;border-top:1px solid var(--line);max-height:230px;overflow:auto}
+.laps li{display:grid;grid-template-columns:1fr auto auto;gap:14px;padding:8px 2px;border-bottom:1px solid var(--line);font-size:14px}
+.laps li span:nth-child(2){font-weight:700}.laps li span:nth-child(3){color:var(--muted);min-width:46px;text-align:right}
+.lapsh{display:flex;justify-content:space-between;margin-top:14px;font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.cali .best{margin:10px 0 0;padding:9px 12px;border-radius:12px;background:var(--up-bg);color:var(--up-ink);font-size:13px;font-weight:650}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="shell">
+  <header class="top">
+    <div class="top-in">
+      <div class="brand">
+        <div><h1 id="title">Latihan</h1><small id="subtitle"></small></div>
+        <span class="sbadge" id="sessBadge" role="button" tabindex="0" hidden></span>
+        <button class="iconbtn" id="btnDays" type="button" aria-label="Pilih hari gym atau istirahat" hidden>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M8 3v4M16 3v4M4 10h16M9 15l2 2 4-4"/></svg>
+        </button>
+        <button class="iconbtn" id="btnAdd" type="button" aria-label="Tambah alat" hidden>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+      </div>
+      <div id="ctl"></div>
+    </div>
+  </header>
+  <div class="scroll" id="scroll"><main class="app" id="app"></main></div>
+  <div class="timer" id="timer" hidden></div>
+  <div id="toastRoot"></div>
+  <nav class="tabs" id="tabs" aria-label="Menu">
+    <button type="button" data-tab="latihan"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg>Latihan</button>
+    <button type="button" data-tab="riwayat"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"/></svg>Riwayat</button>
+    <button type="button" data-tab="alat"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Alat</button>
+    <button type="button" data-tab="atur"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Atur</button>
+  </nav>
+</div>
+<div id="sheetRoot"></div>
+<script>
+(function () {
+'use strict';
+var KEY = 'gym-tracker.v1';
+var MON = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+var DAYS = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+var todayOverride = null;
+
+function $(s, r) { return (r || document).querySelector(s); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+function iso(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function pd(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2], 12); }
+function addDays(s, n) { var d = pd(s); d.setDate(d.getDate() + n); return iso(d); }
+function todayIso() { return todayOverride || iso(new Date()); }
+function diffDays(a, b) { return Math.round((pd(a) - pd(b)) / 864e5); }
+function dayLabel(s) { var d = pd(s); return DAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MON[d.getMonth()] + ' ' + d.getFullYear(); }
+function dayShort(s) { var d = pd(s); return d.getDate() + ' ' + MON[d.getMonth()]; }
+function relDay(s) { var n = diffDays(s, todayIso()); if (n === 0) return 'Hari ini'; if (n === -1) return 'Kemarin'; if (n === 1) return 'Besok'; return n < 0 ? (-n) + ' hari lalu' : n + ' hari lagi'; }
+function uid() { return 'x' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function clamp(n, a, b) { return Math.min(b, Math.max(a, n)); }
+function rnd(n) { return Math.round(n * 100) / 100; }
+function kg(n) { return String(rnd(n)).replace('.', ','); }
+function parseKg(s) { var v = parseFloat(String(s).replace(',', '.')); return isFinite(v) && v >= 0 ? rnd(v) : 0; }
+
+/* ================= data ================= */
+// [no, nama, gerakan, POS, beban, catatan beban, status dari sheet]
+/* tabel kelompok otot: harus ada sebelum load() */
+var MG = { chest: 'Chest', lats: 'Lats', back: 'Punggung atas/bawah', shoulder: 'Bahu', biceps: 'Biceps', triceps: 'Triceps', forearm: 'Lengan bawah', legs: 'Kaki', calf: 'Betis', core: 'Core', other: 'Lainnya' };
+var MG_ORDER = ['chest', 'lats', 'back', 'shoulder', 'biceps', 'triceps', 'forearm', 'legs', 'calf', 'core', 'other'];
+var PRIO = { chest: { label: 'Chest', mg: ['chest'] }, arm: { label: 'Arm', mg: ['biceps', 'triceps', 'forearm'] }, lats: { label: 'Lats', mg: ['lats'] } };
+var SEED_EX = [
+  [1, 'Pec Deck Fly', 'Horizontal Adduction', '3', 60, '', 'ok'],
+  [2, 'Leg Press', 'Hip & Knee Extension Press', '11', 89, '', 'up'],
+  [3, 'Saggital Plane Row', 'Shoulder Extension Row', '1,6', 65, '', 'ok'],
+  [4, 'Low Erector/RDL 75', 'Hip Hinge', '', 85, '', 'ok'],
+  [5, '90° Shoulder Press', 'Shoulder Flexion Press', '5', 65, '', 'ok'],
+  [6, 'Lateral Pulldown', 'Shoulder Adduction', '', 65, '', 'ok'],
+  [7, 'Leg Extension', 'Knee Extension', '', 110, '', 'ok'],
+  [8, 'Incline Chest Press', 'Shoulder Flexion', '3', 75, '', 'ok'],
+  [9, 'Rear delt fly', 'Horizontal Abduction', '', 45, '', 'ok'],
+  [10, 'Kelso Shrugs', 'Scapular Retraction', '', 60, '', 'ok'],
+  [11, 'Leg Curl', 'Knee Flexion', '', 70, '', 'ok'],
+  [13, 'Lateral Raise', 'Shoulder Abduction', '2', 35, '', 'ok'],
+  [14, 'Adductor', 'Hip Adduction', '', 65, '', 'up'],
+  [16, 'Abductor', 'Hip Abductor', '', 85, '', 'ok'],
+  [18, 'Bicep Curl', 'Elbow Flexion', '3', 35, '35/20 sa', 'ok'],
+  [19, 'Calf Raise', 'Ankle Plantarflexion', '', 108, '', 'ok'],
+  [21, 'Reverse Cable Curl', 'Elbow Flexion (Pronated)', '5', 32, '', 'ok'],
+  [22, 'Tricep Rope/Vbar Pulldown', 'Elbow Extension', '15', 32, '', 'ok'],
+  [23, 'SA Wrist Curl', 'Wrist Flexion', '4', 28, '', ''],
+  [24, 'Wrist Extension', 'Wrist Extension', '12', 24.8, '', ''],
+  [20, 'Machine Crunch', 'Spinal Flexion', '3', 50, '', '']
+];
+var KIND_NAME = { iso: 'Isolasi', comp: 'Compound', leg: 'Leg Press' };
+var KIND_BY_NAME = { 'Leg Press': 'leg', 'Saggital Plane Row': 'comp', 'Low Erector/RDL 75': 'comp', '90° Shoulder Press': 'comp', 'Lateral Pulldown': 'comp', 'Incline Chest Press': 'comp' };
+var IMG_BY_NAME = { 'Pec Deck Fly': 'pec-deck', 'Leg Press': 'leg-press', 'Saggital Plane Row': 'row', 'Low Erector/RDL 75': 'rdl', '90° Shoulder Press': 'shoulder-press', 'Lateral Pulldown': 'pulldown', 'Leg Extension': 'leg-ext', 'Incline Chest Press': 'incline', 'Rear delt fly': 'rear-delt', 'Kelso Shrugs': 'shrug', 'Leg Curl': 'leg-curl', 'Lateral Raise': 'lateral', 'Adductor': 'adductor', 'Abductor': 'abductor', 'Bicep Curl': 'bicep', 'Calf Raise': 'calf', 'Reverse Cable Curl': 'hammer', 'Tricep Rope/Vbar Pulldown': 'tricep', 'SA Wrist Curl': 'wrist-curl', 'Wrist Extension': 'wrist-ext', 'Machine Crunch': 'crunch' };
+function imgOf(name) { return IMG_BY_NAME[name] || ''; }
+function kindOf(name) { return KIND_BY_NAME[name] || 'iso'; }
+// alat satu lengan: 2 set (kanan + kiri) dengan istirahat khusus (detik)
+var SA_REST = { 'Lateral Raise': 60, 'Bicep Curl': 60, 'Tricep Rope/Vbar Pulldown': 60, 'Reverse Cable Curl': 60, 'SA Wrist Curl': 30, 'Wrist Extension': 30 };
+function sidesOf(name) { return SA_REST[name] ? 2 : 1; }
+function restOverrideOf(name) { return SA_REST[name] || 0; }
+function defaults() {
+  return {
+    v: 1,
+    settings: { repMin: 4, repMax: 8, step: 5, restIso: 120, restComp: 180, restLeg: 300, weekTarget: 3, targetMin: 90, caliMin: 20, prio: [], theme: 'auto', lastBackup: 0 },
+    ex: SEED_EX.map(function (r, i) { return { id: 'e' + (i + 1), no: String(r[0]), name: r[1], detail: r[2], pos: r[3], weight: r[4], wnote: r[5], step: 0, st: r[6], hidden: false, kind: kindOf(r[1]), sides: sidesOf(r[1]), rest: restOverrideOf(r[1]), img: imgOf(r[1]) }; }),
+    logs: [],
+    days: {},
+    skips: {},
+    sessions: {},
+    cali: {},
+    prevOrder: []
+  };
+}
+function sanitize(o) {
+  if (!o || typeof o !== 'object' || !Array.isArray(o.ex) || !Array.isArray(o.logs)) return null;
+  var d = defaults(), st = o.settings || {}, s = d.settings;
+  s.repMin = clamp(parseInt(st.repMin, 10) || 4, 1, 30); s.repMax = clamp(parseInt(st.repMax, 10) || 8, s.repMin, 50);
+  s.step = st.step > 0 ? rnd(+st.step) : 5; s.weekTarget = clamp(parseInt(st.weekTarget, 10) || 3, 1, 7); s.targetMin = clamp(parseInt(st.targetMin, 10) || 90, 10, 300); s.caliMin = clamp(parseInt(st.caliMin, 10) || 20, 1, 180); s.prio = Array.isArray(st.prio) ? st.prio.filter(function (k, i, a) { return PRIO[k] && a.indexOf(k) === i; }) : [];
+  s.restIso = clamp(parseInt(st.restIso, 10) || 120, 10, 900); s.restComp = clamp(parseInt(st.restComp, 10) || 180, 10, 900); s.restLeg = clamp(parseInt(st.restLeg, 10) || 300, 10, 900);
+  s.theme = ['auto', 'light', 'dark'].indexOf(st.theme) >= 0 ? st.theme : 'auto'; s.lastBackup = +st.lastBackup || 0;
+  var ex = [], seen = {};
+  o.ex.forEach(function (e, i) {
+    if (!e || !e.name) return;
+    var id = String(e.id || uid()); if (seen[id]) return; seen[id] = 1;
+    ex.push({ id: id, no: String(e.no == null ? i + 1 : e.no).slice(0, 6), name: String(e.name).slice(0, 60), detail: String(e.detail || '').slice(0, 80), pos: String(e.pos || '').slice(0, 12),
+      weight: e.weight >= 0 ? rnd(+e.weight) : 0, wnote: String(e.wnote || '').slice(0, 30), step: e.step > 0 ? rnd(+e.step) : 0, st: ['ok', 'up', 'low'].indexOf(e.st) >= 0 ? e.st : '', hidden: !!e.hidden, kind: KIND_NAME[e.kind] ? e.kind : kindOf(String(e.name)), sides: e.sides === 1 || e.sides === 2 ? e.sides : sidesOf(String(e.name)), rest: typeof e.rest === 'number' && e.rest >= 0 ? clamp(Math.round(e.rest), 0, 900) : restOverrideOf(String(e.name)), img: typeof e.img === 'string' && /^[a-z0-9-]{0,30}$/.test(e.img) ? e.img : imgOf(String(e.name)), mg: MG[e.mg] ? e.mg : '' });
+  });
+  var logs = [], lid = {};
+  o.logs.forEach(function (l) {
+    if (!l || !seen[l.ex] || !/^\d{4}-\d{2}-\d{2}$/.test(l.date || '') || !(l.reps >= 0)) return;
+    var id = String(l.id || uid()); if (lid[id]) id = uid(); lid[id] = 1;
+    var lg = { id: id, date: l.date, ex: l.ex, weight: l.weight >= 0 ? rnd(+l.weight) : 0, reps: Math.min(99, Math.round(+l.reps)), pos: String(l.pos || ''), createdAt: +l.createdAt || Date.now() };
+    if (l.rr != null && l.rl != null && l.rr >= 0 && l.rl >= 0) { lg.rr = Math.min(99, Math.round(+l.rr)); lg.rl = Math.min(99, Math.round(+l.rl)); lg.reps = Math.min(lg.rr, lg.rl); }
+    logs.push(lg);
+  });
+  var days = {};
+  if (o.days && typeof o.days === 'object') Object.keys(o.days).forEach(function (k) { if (/^\d{4}-\d{2}-\d{2}$/.test(k) && (o.days[k] === 'gym' || o.days[k] === 'rest' || o.days[k] === 'cali')) days[k] = o.days[k]; });
+  var skips = {};
+  if (o.skips && typeof o.skips === 'object') Object.keys(o.skips).forEach(function (k) { var pr = k.split('|'); if (o.skips[k] && pr.length === 2 && /^\d{4}-\d{2}-\d{2}$/.test(pr[0]) && seen[pr[1]]) skips[k] = 1; });
+  var sessions = {};
+  if (o.sessions && typeof o.sessions === 'object') Object.keys(o.sessions).forEach(function (k) { var v = o.sessions[k]; if (/^\d{4}-\d{2}-\d{2}$/.test(k) && v && v.start > 0 && (v.end === 0 || v.end > v.start)) sessions[k] = { start: Math.round(+v.start), end: Math.round(+v.end) || 0 }; });
+  var cali = {};
+  if (o.cali && typeof o.cali === 'object') Object.keys(o.cali).forEach(function (k) {
+    var v = o.cali[k]; if (!/^\d{4}-\d{2}-\d{2}$/.test(k) || !v || typeof v !== 'object') return;
+    var tg = clamp(Math.round(+v.target) || 1200, 60, 10800), stt = ['run', 'pause', 'done'].indexOf(v.status) >= 0 ? v.status : 'done';
+    var laps = Array.isArray(v.laps) ? v.laps.filter(function (x) { return x >= 0 && isFinite(x); }).slice(0, 999).map(function (x) { return Math.round(+x); }) : [];
+    var rd = clamp(Math.round(+v.rounds) || 0, 0, 999), acc = clamp(Math.round(+v.acc) || 0, 0, tg * 1000), sa = Math.round(+v.startAt) || 0;
+    if (stt === 'run' && !(sa > 0)) stt = 'pause';
+    cali[k] = { target: tg, status: stt, startAt: stt === 'run' ? sa : 0, acc: acc, rounds: rd, laps: laps };
+    if (days[k] !== 'cali') days[k] = 'cali';
+  });
+  var prevOrder = Array.isArray(o.prevOrder) ? o.prevOrder.filter(function (id) { return seen[id]; }) : [];
+  return { v: 1, settings: s, ex: ex, logs: logs, days: days, skips: skips, sessions: sessions, cali: cali, prevOrder: prevOrder };
+}
+var storageOk = true, S;
+function load() { try { var raw = localStorage.getItem(KEY); if (raw) { var s = sanitize(JSON.parse(raw)); if (s) return s; } } catch (e) { storageOk = false; } return defaults(); }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { storageOk = false; } }
+S = load();
+
+function exById(id) { for (var i = 0; i < S.ex.length; i++) if (S.ex[i].id === id) return S.ex[i]; return null; }
+function statusOf(reps) { return reps > S.settings.repMax ? 'up' : reps >= S.settings.repMin ? 'ok' : 'low'; }
+function logsOf(exId) { return S.logs.filter(function (l) { return l.ex === exId; }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : a.createdAt - b.createdAt; }); }
+function lastLog(ex) { var a = logsOf(ex.id); return a.length ? a[a.length - 1] : null; }
+function stateOf(ex) {
+  var l = lastLog(ex);
+  if (l) return l.weight !== ex.weight ? 'new' : statusOf(l.reps);
+  return ex.st || '';
+}
+function repsTxt(l) { return l.rr != null ? l.rr + '/' + l.rl : String(l.reps); }
+function restFor(ex) { if (ex.rest > 0) return ex.rest; var k = ex.kind, s = S.settings; return k === 'leg' ? s.restLeg : k === 'comp' ? s.restComp : s.restIso; }
+function fmtRest(v) { var m = Math.floor(v / 60), r = v % 60; return v < 60 ? v + ' detik' : r === 0 ? m + ' menit' : m + ' mnt ' + r + ' dtk'; }
+function stepOf(ex) { return ex.step > 0 ? ex.step : S.settings.step; }
+function suggestion(ex) {
+  var st = stateOf(ex), l = lastLog(ex);
+  if (st === 'up') return { kind: 'up', weight: rnd(ex.weight + stepOf(ex)), why: l ? 'Terakhir ' + repsTxt(l) + ' reps (di atas ' + S.settings.repMax + ').' : 'Ditandai + (di atas ' + S.settings.repMax + ' reps).' };
+  if (st === 'low') return { kind: 'low', weight: Math.max(0, rnd(ex.weight - stepOf(ex))), why: 'Terakhir ' + repsTxt(l) + ' reps (di bawah ' + S.settings.repMin + ').' };
+  return null;
+}
+function chipHTML(st) {
+  if (st === 'ok') return '<span class="chip ok" title="Di range">✓</span>';
+  if (st === 'up') return '<span class="chip up" title="Naik beban">+</span>';
+  if (st === 'low') return '<span class="chip low" title="Di bawah range">↓</span>';
+  if (st === 'new') return '<span class="chip new">baru</span>';
+  return '<span class="chip">–</span>';
+}
+/* ================= kelompok otot & urutan optimal ================= */
+function mgOf(name) {
+  var n = String(name).toLowerCase();
+  if (/wrist|forearm/.test(n)) return 'forearm';
+  if (/calf/.test(n)) return 'calf';
+  if (/crunch|\babs?\b|\bcore\b|plank|sit-?up/.test(n)) return 'core';
+  if (/tricep|pushdown|skull|\bdips?\b|kickback/.test(n) || (/extension/.test(n) && !/leg|back|wrist|hip/.test(n))) return 'triceps';
+  if (/curl/.test(n) && !/leg|wrist/.test(n) || /bicep|hammer|preacher/.test(n)) return 'biceps';
+  if (/rear delt|lateral raise|front raise|shoulder|overhead|military|arnold|upright/.test(n)) return 'shoulder';
+  if (/shrug|trap|erector|rdl|deadlift|hyperext|back ext|good morning/.test(n)) return 'back';
+  if (/pulldown|pull-down|pull-?up|chin|\blats?\b|\brow\b|pullover/.test(n)) return 'lats';
+  if (/pec|chest|\bfly\b|flye|bench|push-?up|incline|decline/.test(n)) return 'chest';
+  if (/leg|squat|lunge|hip|abduct|adduct|glute|ham|quad|knee/.test(n)) return 'legs';
+  return 'other';
+}
+function mgEff(e) { return e.mg && MG[e.mg] ? e.mg : mgOf(e.name); }
+function prioSet() { var P = {}; (S.settings.prio || []).forEach(function (k) { P[k] = 1; }); return P; }
+function isPrioEx(e) { var P = prioSet(), g = mgEff(e); return Object.keys(P).some(function (k) { return PRIO[k] && PRIO[k].mg.indexOf(g) >= 0; }); }
+/* skor kecil = dikerjakan lebih awal. Aturan: otot prioritas dulu saat segar, compound sebelum isolasi,
+   otot bantu (bahu/triceps untuk chest, biceps/grip untuk lats) setelah otot utamanya, kaki berat tidak di depan,
+   betis, core, dan lengan bawah di akhir. */
+function orderScore(e, P) {
+  var g = mgEff(e), comp = e.kind === 'comp' || e.kind === 'leg', n = String(e.name).toLowerCase();
+  var main = (g === 'chest' && P.chest) || (g === 'lats' && P.lats), big = P.chest || P.lats;
+  if (main) return (comp ? 10 : 14) + (g === 'lats' && /pulldown|pull-?up|chin/.test(n) ? -0.2 : 0);
+  if (P.arm && (g === 'biceps' || g === 'triceps')) return (big ? 16 : 10) + (g === 'triceps' ? 0 : 0.5) + (comp ? 0 : 0.2);
+  if (P.arm && g === 'forearm') return 75;
+  switch (g) {
+    case 'chest': case 'lats': return comp ? 20 : 40;
+    case 'shoulder': return comp ? 21 : 41;
+    case 'legs': return e.kind === 'leg' ? 23 : comp ? 24 : 60;
+    case 'back': return comp ? 25 : 44;
+    case 'triceps': return 46;
+    case 'biceps': return 47;
+    case 'calf': return 70;
+    case 'core': return 80;
+    case 'forearm': return 90;
+    default: return comp ? 30 : 50;
+  }
+}
+function optimalOrder() {
+  var P = prioSet(), idx = {}; S.ex.forEach(function (e, i) { idx[e.id] = i; });
+  return S.ex.slice().sort(function (a, b) { return (orderScore(a, P) - orderScore(b, P)) || (idx[a.id] - idx[b.id]); });
+}
+function setOrder(ids) {
+  var by = {}; S.ex.forEach(function (e) { by[e.id] = e; });
+  var out = [], used = {}; ids.forEach(function (id) { if (by[id] && !used[id]) { out.push(by[id]); used[id] = 1; } });
+  S.ex.forEach(function (e) { if (!used[e.id]) out.push(e); }); S.ex = out;
+}
+function prioText() { var l = (S.settings.prio || []).map(function (k) { return PRIO[k].label; }); return l.length ? l.join(' + ') : 'tanpa prioritas'; }
+function arrangeNow(msg, oldPrio) {
+  var before = S.ex.map(function (e) { return e.id; }), after = optimalOrder(), same = after.every(function (e, i) { return e.id === before[i]; });
+  if (same) { render(); toast('Urutan sudah optimal untuk ' + prioText()); return; }
+  S.prevOrder = before; S.ex = after; save(); ui.open = null; ui.draft = null; render();
+  toast((msg || 'Urutan disusun') + ' (' + prioText() + ')', function () { setOrder(before); S.prevOrder = []; if (oldPrio) S.settings.prio = oldPrio; save(); render(); });
+}
+function numOf(ex) { if (ex.hidden) return '–'; var n = 0; for (var i = 0; i < S.ex.length; i++) { if (!S.ex[i].hidden) n++; if (S.ex[i] === ex) return String(n); } return ''; }
+function visibleEx() { return S.ex.filter(function (e) { return !e.hidden; }); }
+
+/* ================= state UI ================= */
+var ui = { tab: 'latihan', day: todayIso(), open: null, draft: null, hmode: 'progres', pmode: 'minggu', pref: todayIso(), nudgeOff: false };
+var lastToday = todayIso();
+
+/* ================= toast & sheet ================= */
+var toastTimer = null;
+function toast(msg, undo) {
+  var root = $('#toastRoot'); clearTimeout(toastTimer);
+  root.innerHTML = '<div class="toast" role="status"><span>' + esc(msg) + '</span>' + (undo ? '<button type="button" id="toastUndo">Batal</button>' : '') + '</div>';
+  if (undo) $('#toastUndo').onclick = function () { root.innerHTML = ''; undo(); };
+  toastTimer = setTimeout(function () { root.innerHTML = ''; }, undo ? 6000 : 3000);
+}
+var SH = null;
+var X_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+var BACK_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>';
+function openSheet(o) { SH = o; drawSheet(); document.body.style.overflow = 'hidden'; }
+function drawSheet() {
+  if (SH.pop) { $('#sheetRoot').innerHTML = '<div class="sheet-root pop-root"><div class="backdrop" data-act="sclose"></div><div class="pop" role="dialog" aria-modal="true" aria-label="' + esc(SH.title) + '">' + SH.html() + '</div></div>'; return; }
+  $('#sheetRoot').innerHTML = '<div class="sheet-root"><div class="backdrop" data-act="sclose"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(SH.title) + '"><div class="grab"></div>' +
+    '<div class="sheet-head">' + (SH.back ? '<button class="iconbtn" type="button" data-act="sback" aria-label="Kembali">' + BACK_SVG + '</button>' : '') + '<h2>' + esc(SH.title) + '</h2>' +
+    '<button class="iconbtn" type="button" data-act="sclose" aria-label="Tutup">' + X_SVG + '</button></div><div id="sbody">' + SH.html() + '</div></div></div>';
+}
+function repaint() { var b = $('#sbody'); if (b && SH) b.innerHTML = SH.html(); }
+function closeSheet() { SH = null; $('#sheetRoot').innerHTML = ''; document.body.style.overflow = ''; }
+
+/* ================= timer istirahat ================= */
+var rest = null, restIv = null, audioCtx = null;
+function beep() {
+  try {
+    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    audioCtx = audioCtx || new AC(); if (audioCtx.state === 'suspended') audioCtx.resume();
+    [0, 0.28, 0.56].forEach(function (t) {
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = 'sine'; o.frequency.value = 880;
+      o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0.0001, audioCtx.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(0.4, audioCtx.currentTime + t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + t + 0.22);
+      o.start(audioCtx.currentTime + t); o.stop(audioCtx.currentTime + t + 0.25);
+    });
+  } catch (e) {}
+  try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
+}
+function fmtT(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + pad(s % 60); }
+function startRest(sec) {
+  if (!(sec > 0)) return;
+  try { var AC = window.AudioContext || window.webkitAudioContext; if (AC) { audioCtx = audioCtx || new AC(); if (audioCtx.state === 'suspended') audioCtx.resume(); } } catch (e) {}
+  rest = { end: Date.now() + sec * 1000, total: sec, fired: false };
+  clearInterval(restIv); restIv = setInterval(tickRest, 250); tickRest();
+}
+function stopRest() { rest = null; clearInterval(restIv); restIv = null; drawTimer(); }
+function tickRest() {
+  if (!rest) return;
+  var left = (rest.end - Date.now()) / 1000;
+  if (left <= 0 && !rest.fired) { rest.fired = true; beep(); }
+  if (left <= -8) { stopRest(); return; }
+  drawTimer();
+}
+function drawTimer() {
+  var el = $('#timer');
+  $('#shell').classList.toggle('rt', !!rest);
+  if (!rest) { el.hidden = true; el.innerHTML = ''; return; }
+  var left = (rest.end - Date.now()) / 1000, done = left <= 0;
+  el.hidden = false; el.className = 'timer' + (done ? ' done' : '');
+  el.innerHTML = '<div class="tm"><span class="tl">' + (done ? 'Istirahat selesai' : 'Istirahat') + '</span><span class="num">' + (done ? 'Gas set berikutnya' : fmtT(left)) + '</span></div>' +
+    (done ? '' : '<button type="button" data-t="+15">+15 dtk</button>') + '<button type="button" data-t="skip">' + (done ? 'Tutup' : 'Lewati') + '</button>' +
+    '<div class="bar"><i style="width:' + (done ? 100 : clamp(100 - left / rest.total * 100, 0, 100)).toFixed(1) + '%"></i></div>';
+}
+
+/* ================= tab Latihan ================= */
+/* ---- durasi sesi ---- */
+function fmtClock(ms) { var t = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), sc = t % 60; return (h ? h + ':' + pad(m) : m) + ':' + pad(sc); }
+function fmtHM(ms) { var m = Math.round(ms / 60000), h = Math.floor(m / 60); return h ? h + ' j ' + pad(m % 60) + ' mnt' : m + ' mnt'; }
+function targetMs() { return S.settings.targetMin * 60000; }
+function sess(day) { return S.sessions[day] || null; }
+function sessDur(day) { var x = sess(day); return x && x.end ? x.end - x.start : null; }
+function sessRunning(day) { var x = sess(day); return !!(x && !x.end && day === todayIso()); }
+function startSession(auto) { var d = todayIso(); if (S.sessions[d]) return; S.sessions[d] = { start: Date.now(), end: 0 }; save(); if (!auto) toast('Sesi dimulai. Selamat latihan!'); else toast('Sesi dimulai otomatis'); }
+function hhmm(ts) { var d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+function atTime(day, hm) { var p = hm.split(':'), d = pd(day); d.setHours(+p[0], +p[1], 0, 0); return d.getTime(); }
+function skipKey(day, id) { return day + '|' + id; }
+function isSkipped(day, id) { return !!S.skips[skipKey(day, id)]; }
+function skipDates(id) { var out = []; Object.keys(S.skips).forEach(function (k) { var p = k.split('|'); if (p[1] === id) out.push(p[0]); }); return out.sort(); }
+function dayCounts(day, list) { var logs = dayLogs(day), lg = 0, sk = 0; list.forEach(function (e) { if (logs[e.id]) lg++; else if (isSkipped(day, e.id)) sk++; }); return { logged: lg, skipped: sk, n: lg + sk }; }
+function dayHasLogs(day) { for (var i = 0; i < S.logs.length; i++) if (S.logs[i].date === day) return true; return false; }
+function dayMode(day) { return dayHasLogs(day) ? 'gym' : (S.days[day] || ''); }
+function dayLogs(day) { var m = {}; S.logs.forEach(function (l) { if (l.date === day) m[l.ex] = l; }); return m; }
+function repsHint(r) { return r > S.settings.repMax ? 'hi' : r >= S.settings.repMin ? 'in' : 'lo'; }
+function feedbackFor(ex, d) {
+  if (!d || d.reps == null) return { c: '', t: 'Pilih jumlah reps yang berhasil kamu lakukan.' };
+  var st = statusOf(d.reps), s = S.settings, step = stepOf(ex), pre = ex.sides === 2 && d.rr !== d.rl ? 'Kanan ' + d.rr + ', kiri ' + d.rl + ' (sisi terlemah yang dihitung). ' : '';
+  if (st === 'up') return { c: 'up', t: pre + '+ ' + d.reps + ' reps, di atas ' + s.repMax + '. Sesi berikutnya coba ' + kg(rnd(d.weight + step)) + ' kg.' };
+  if (st === 'ok') return { c: 'ok', t: pre + '✓ ' + d.reps + ' reps, di range ' + s.repMin + '–' + s.repMax + '. Tetap di ' + kg(d.weight) + ' kg.' };
+  return { c: 'low', t: pre + '↓ ' + d.reps + ' reps, di bawah ' + s.repMin + '. Beban mungkin terlalu berat' + (d.weight - step > 0 ? ' (coba ' + kg(rnd(d.weight - step)) + ' kg).' : '.') };
+}
+function panelHTML(ex, log) {
+  var d = ui.draft, sug = suggestion(ex), fb = feedbackFor(ex, d), chips = '';
+  function chipRow(side, cur) { var h = ''; for (var r = 1; r <= 12; r++) h += '<button type="button" class="' + repsHint(r) + '" data-act="reps" data-side="' + side + '" data-v="' + r + '" aria-pressed="' + (cur === r) + '">' + r + '</button>'; return '<div class="rchips">' + h + '</div>'; }
+  if (ex.sides === 2) chips = '<span class="fl" style="margin-bottom:6px">Kanan</span>' + chipRow('r', d.rr) + '<span class="fl" style="margin:12px 0 6px">Kiri</span>' + chipRow('l', d.rl);
+  else chips = chipRow('', d.reps);
+  return '<div class="panel">' + (log ? '' : isSkipped(ui.day, ex.id) ? '<button type="button" class="btn block" data-act="unskip">Batal lewati</button>' : '<button type="button" class="btn block" data-act="skip">Lewati alat ini</button>') +
+    (sug && d.weight === ex.weight ? '<div class="sug"><span>' + esc(sug.why) + ' ' + (sug.kind === 'up' ? 'Coba ' : 'Turunkan ke ') + '<b>' + kg(sug.weight) + ' kg</b>.</span><button type="button" data-act="apply" data-w="' + sug.weight + '">Pakai</button></div>' : '') +
+    '<div><span class="fl">Beban (kg)' + (ex.pos ? ' · POS ' + esc(ex.pos) : '') + '</span><div class="stp"><button type="button" data-act="wm" aria-label="Kurangi beban">−</button><input id="dW" class="num" inputmode="decimal" autocomplete="off" value="' + kg(d.weight) + '" aria-label="Beban"><button type="button" data-act="wp" aria-label="Tambah beban">+</button></div></div>' +
+    '<div><span class="fl">Reps (target ' + S.settings.repMin + '–' + S.settings.repMax + (ex.sides === 2 ? ', 2 set: kanan + kiri' : '') + ')</span>' + chips + '</div>' +
+    '<p class="fb ' + fb.c + '" id="fb">' + esc(fb.t) + '</p>' +
+    '<p class="note" style="margin:0">Istirahat setelah simpan: ' + fmtRest(restFor(ex)) + ' (' + (ex.rest > 0 ? 'khusus alat ini' : KIND_NAME[ex.kind]) + ')</p>' +
+    (!log && isSkipped(ui.day, ex.id) ? '<p class="fb">Alat ini dilewati hari ini. Beban dan riwayat tidak berubah.</p>' : '') +
+    '<button type="button" class="btn primary block" data-act="save" id="dSave"' + (d.reps == null || !(d.weight > 0) ? ' disabled' : '') + '>' + (log ? 'Perbarui' : 'Simpan') + '</button>' +
+    '<button type="button" class="btn block" data-act="hist" data-id="' + esc(ex.id) + '">Riwayat alat ini</button>' +
+    (ex.img ? '<div><span class="fl">Contoh gerakan (awal → akhir)</span><div class="pics"><img src="img/' + ex.img + '-0.jpg" alt="Posisi awal ' + esc(ex.name) + '" loading="lazy"><img src="img/' + ex.img + '-1.jpg" alt="Posisi akhir ' + esc(ex.name) + '" loading="lazy"></div></div>' : '') +
+    (log ? '<button type="button" class="btn danger block" data-act="dellog">Hapus catatan ini</button>' : '') + '</div>';
+}
+function rowHTML(ex, log) {
+  var open = ui.open === ex.id, st = log ? statusOf(log.reps) : stateOf(ex), w = log ? log.weight : ex.weight, skipped = !log && isSkipped(ui.day, ex.id);
+  return '<div class="wrow' + (log ? ' done' : skipped ? ' skipped' : ' todo') + '" data-ex="' + esc(ex.id) + '"><button type="button" class="whead" data-act="open" data-id="' + esc(ex.id) + '" aria-expanded="' + open + '">' +
+    (ex.img ? '<span class="tw"><img src="img/' + ex.img + '-0.jpg" alt="" loading="lazy" decoding="async"><span class="no">' + numOf(ex) + '</span></span>' : '<span class="no">' + numOf(ex) + '</span>') + '<span class="wmain"><span class="wn">' + (isPrioEx(ex) ? '<span class="star" title="Prioritas" aria-label="Prioritas">★</span> ' : '') + esc(ex.name) + '</span>' + (ex.detail ? '<span class="wd">' + esc(ex.detail) + '</span>' : '') +
+    '<span class="wmeta">' + (ex.sides === 2 ? '<span class="pos">Ka + Ki</span>' : '') + (ex.pos ? '<span class="pos">POS ' + esc(ex.pos) + '</span>' : '') + '<span class="wt num">' + kg(w) + ' kg</span>' + (ex.wnote ? '<span class="wnote">' + esc(ex.wnote) + '</span>' : '') + '</span></span>' +
+    '<span class="wright">' + (log ? '<span class="reps num">' + repsTxt(log) + ' reps</span>' : '') + (skipped ? '<span class="chip skip">Lewati</span>' : !log && (st === 'ok' || st === '') ? '' : chipHTML(st)) + '</span></button>' + (open ? panelHTML(ex, log) : '') + '</div>';
+}
+function nudgeHTML() {
+  if (ui.nudgeOff || S.logs.length < 5) return '';
+  var days = S.settings.lastBackup ? Math.floor((Date.now() - S.settings.lastBackup) / 864e5) : null;
+  if (days !== null && days < 7) return '';
+  return '<div class="nudge"><span class="sp">' + (days === null ? 'Datamu ada di HP ini saja dan belum pernah dicadangkan.' : 'Terakhir dicadangkan ' + days + ' hari lalu.') + '</span><button type="button" data-act="nudge-go">Cadangkan</button><button type="button" data-act="nudge-x">Nanti</button></div>';
+}
+function clockState(el, tgt) { return el < tgt * 0.9 ? 'ok' : el <= tgt ? 'near' : 'over'; }
+function sessionCardHTML(list, dc) {
+  var d = ui.day, x = sess(d), isToday = d === todayIso(), tg = targetMs(), all = list.length > 0 && dc.n >= list.length;
+  if (!x) {
+    if (!isToday) return '';
+    return '<div class="card sesscard"><div class="lbl">Sesi latihan</div><p class="note" style="margin:6px 0 12px">Target ' + fmtHM(tg) + '. Timer jalan sampai kamu menekan Selesai.</p><button type="button" class="btn primary block" data-act="sstart">Mulai sesi</button></div>';
+  }
+  if (!x.end) {
+    if (!isToday) return '<div class="card sesscard"><div class="lbl">Sesi latihan</div><p class="note" style="margin:6px 0 12px">Sesi ini dimulai pukul ' + hhmm(x.start) + ' dan tidak diselesaikan, jadi durasinya tidak dihitung.</p><button type="button" class="btn block" data-act="sedit">Atur jam mulai dan selesai</button></div>';
+    var el = Date.now() - x.start, pct = Math.min(100, el / tg * 100);
+    return '<div class="card sesscard"><div class="lbl">Sesi berjalan · mulai ' + hhmm(x.start) + '</div><div class="bigclock num" id="sessClock">' + fmtClock(el) + '</div><div class="bar"><i id="sessBar" class="' + clockState(el, tg) + '" style="width:' + pct.toFixed(1) + '%"></i></div>' +
+      '<p class="note" id="sessHint" style="margin:8px 0 12px">' + sessHint(list, dc) + '</p>' +
+      '<button type="button" class="btn primary block" data-act="sfinish"' + (all ? '' : ' disabled') + '>Selesai sesi</button>' +
+      (all ? '' : '<p class="note" style="margin:8px 0 0">Tombol aktif setelah semua alat tercatat atau dilewati (' + dc.n + ' dari ' + list.length + ').</p>') +
+      '<div class="btnrow" style="margin-top:10px"><button type="button" class="btn" data-act="searly">' + (ui.earlyArmed ? 'Ketuk lagi: akhiri sekarang' : 'Akhiri dulu') + '</button><button type="button" class="btn" data-act="sedit">Ubah jam</button></div></div>';
+  }
+  var du = x.end - x.start, diff = du - tg, st = du <= tg ? 'ok' : du <= tg * 1.1 ? 'near' : 'over';
+  return '<div class="card sesscard"><div class="lbl">Sesi selesai · ' + hhmm(x.start) + '–' + hhmm(x.end) + '</div><div class="bigclock num ' + st + '">' + fmtClock(du) + '</div>' +
+    '<p class="note" style="margin:6px 0 12px">' + (diff <= 0 ? 'Di bawah target ' + fmtHM(tg) + ', lebih cepat ' + fmtHM(-diff) + '.' : 'Lewat target ' + fmtHM(tg) + ' sebesar ' + fmtHM(diff) + '.') + '</p>' +
+    '<button type="button" class="btn block" data-act="sedit">Ubah jam</button></div>';
+}
+function sessHint(list, dc) {
+  var x = sess(todayIso()); if (!x || x.end) return '';
+  var el = Date.now() - x.start, tg = targetMs();
+  if (dc.n >= list.length && list.length) return 'Semua alat sudah tertangani. Ketuk Selesai sesi.';
+  if (dc.n < 3) return 'Target ' + fmtHM(tg) + '. Perkiraan selesai muncul setelah 3 alat tertangani.';
+  var proj = el * list.length / dc.n, left = Math.max(0, tg - el);
+  return 'Perkiraan selesai ' + fmtHM(proj) + ' (target ' + fmtHM(tg) + '). ' + (proj > tg * 1.1 ? 'Agak lambat: pertimbangkan melewati satu dua alat atau memotong istirahat.' : proj > tg ? 'Sedikit di atas target.' : 'Sesuai rencana.') + ' Sisa waktu ' + fmtHM(left) + '.';
+}
+function updateClock() {
+  var b = $('#sessBadge'), t = todayIso(), x = sess(t), ca = caliActive();
+  if (!(x && !x.end) && ca) {
+    var rm = ca.r.target * 1000 - caliElapsed(ca.r);
+    b.hidden = false; b.className = 'sbadge' + (ca.r.status === 'pause' ? ' near' : rm <= 30000 ? ' over' : ''); b.textContent = (ca.r.status === 'pause' ? '⏸ ' : '⏱ ') + fmtCount(rm) + ' · ' + ca.r.rounds + ' ronde'; caliDraw();
+    return;
+  }
+  if (x && !x.end) {
+    var el = Date.now() - x.start, tg = targetMs();
+    b.hidden = false; b.className = 'sbadge ' + clockState(el, tg); b.textContent = '⏱ ' + fmtClock(el);
+    var c = $('#sessClock'); if (c) { c.textContent = fmtClock(el); var br = $('#sessBar'); if (br) { br.style.width = Math.min(100, el / tg * 100).toFixed(1) + '%'; br.className = clockState(el, tg); } }
+  } else { b.hidden = true; b.textContent = ''; }
+}
+function choiceHTML() {
+  var past = ui.day < todayIso();
+  return '<div class="card choice"><h2>' + (past ? 'Hari itu gym atau istirahat?' : ui.day === todayIso() ? 'Hari ini gym atau istirahat?' : 'Rencana hari itu?') + '</h2>' +
+    '<p class="note" style="margin:0 0 14px">Pilih dulu. Gym menampilkan daftar alat, Calisthenics menampilkan timer AMRAP.</p>' +
+    '<div class="cgrid"><button type="button" class="btn primary" data-act="setmode" data-v="gym">Gym</button><button type="button" class="btn primary" data-act="setmode" data-v="cali">Calisthenics</button><button type="button" class="btn wide" data-act="setmode" data-v="rest">Istirahat</button></div></div>';
+}
+function latihanHTML() {
+  var mode = dayMode(ui.day), html = nudgeHTML();
+  if (mode === '') return html + choiceHTML();
+  if (mode === 'cali') return html + caliCardHTML();
+  if (mode === 'rest') return html + '<div class="card choice"><h2>Hari istirahat</h2><p class="note" style="margin:0 0 14px">Pemulihan juga bagian dari latihan. Tidak ada yang perlu dicatat hari ini.</p>' +
+    '<div class="cgrid"><button type="button" class="btn primary" data-act="setmode" data-v="gym">Ternyata gym</button><button type="button" class="btn primary" data-act="setmode" data-v="cali">Calisthenics</button><button type="button" class="btn wide" data-act="setmode" data-v="">Batalkan pilihan</button></div></div>';
+  var logs = dayLogs(ui.day), list = visibleEx(), dc = dayCounts(ui.day, list), n = dc.n;
+  var ups = 0; list.forEach(function (e) { if (logs[e.id] && statusOf(logs[e.id].reps) === 'up') ups++; });
+  if (!list.length) return html + '<p class="empty">Belum ada alat. Ketuk tab Alat lalu tombol + untuk menambah.</p>';
+  html += sessionCardHTML(list, dc);
+  html += '<div class="sumbar"><span class="d">' + dc.logged + ' selesai</span><span>' + (list.length - n) + ' belum</span><span class="k">' + dc.skipped + ' dilewati</span></div>';
+  html += '<div class="wlist">' + list.map(function (e) { return rowHTML(e, logs[e.id]); }).join('') + '</div>';
+  if (n === list.length) html += '<div class="card"><h2>Ringkasan</h2><p class="note" style="margin:0">' + dc.logged + ' alat tercatat' + (dc.skipped ? ', ' + dc.skipped + ' dilewati' : '') + '.' + (ups ? ' ' + ups + ' alat siap naik beban (+).' : '') + '</p></div>';
+  if (!dayHasLogs(ui.day)) html += '<div class="btnrow"><button type="button" class="btn" data-act="setmode" data-v="cali">Ganti jadi calisthenics</button><button type="button" class="btn" data-act="setmode" data-v="rest">Ganti jadi istirahat</button></div>';
+  return html;
+}
+
+/* ================= calisthenics (AMRAP) ================= */
+var CALI_MOVES = [[5, 'Pull Up'], [10, 'Push Up'], [15, 'Squat']];
+function caliPerRound() { return CALI_MOVES.reduce(function (t, m) { return t + m[0]; }, 0); }
+function caliRec(day) { return S.cali[day] || null; }
+function hasCali(day) { return !!S.cali[day]; }
+function caliElapsed(r) { return r.acc + (r.status === 'run' ? Math.max(0, Date.now() - r.startAt) : 0); }
+function fmtCount(ms) { return fmtClock(Math.ceil(Math.max(0, ms) / 1000) * 1000); }
+function caliActive() { var k = Object.keys(S.cali); for (var i = 0; i < k.length; i++) { var r = S.cali[k[i]]; if (r.status === 'run' || r.status === 'pause') return { day: k[i], r: r }; } return null; }
+function caliSplits(r) { return r.laps.map(function (x, i) { return x - (i ? r.laps[i - 1] : 0); }); }
+function caliBest(exceptDay, target) { var b = 0; Object.keys(S.cali).forEach(function (d) { var r = S.cali[d]; if (d !== exceptDay && r.status === 'done' && r.target === target && r.rounds > b) b = r.rounds; }); return b; }
+function unlockAudio() { try { var AC = window.AudioContext || window.webkitAudioContext; if (AC) { audioCtx = audioCtx || new AC(); if (audioCtx.state === 'suspended') audioCtx.resume(); } } catch (e) {} }
+function clickTone() {
+  try {
+    if (!audioCtx) return; var o = audioCtx.createOscillator(), g = audioCtx.createGain(), t = audioCtx.currentTime; o.type = 'sine'; o.frequency.value = 660;
+    o.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12); o.start(t); o.stop(t + 0.14);
+  } catch (e) {}
+  try { if (navigator.vibrate) navigator.vibrate(25); } catch (e) {}
+}
+var wakeLock = null, caliTimeout = null;
+function wakeOn() { try { if (navigator.wakeLock && !wakeLock) navigator.wakeLock.request('screen').then(function (w) { wakeLock = w; w.addEventListener('release', function () { wakeLock = null; }); }).catch(function () {}); } catch (e) {} }
+function wakeOff() { try { if (wakeLock) { wakeLock.release(); wakeLock = null; } } catch (e) {} }
+function caliSchedule() {
+  clearTimeout(caliTimeout); caliTimeout = null;
+  var a = caliActive(); if (!a || a.r.status !== 'run') { wakeOff(); return; }
+  wakeOn(); caliTimeout = setTimeout(function () { caliTick(); }, Math.max(20, a.r.target * 1000 - caliElapsed(a.r) + 30));
+}
+function caliFinish(r, day, silent) {
+  r.acc = Math.min(r.target * 1000, caliElapsed(r)); r.startAt = 0; r.status = 'done'; save(); caliSchedule();
+  if (silent) return;
+  beep(); render();
+  if (SH) toast('Waktu habis: ' + r.rounds + ' ronde'); else caliPop(day, r);
+}
+/* dipanggil tiap detik, saat kembali ke aplikasi, dan oleh timeout */
+function caliTick() {
+  var t = todayIso(), changed = false;
+  Object.keys(S.cali).forEach(function (d) {
+    var r = S.cali[d];
+    if (r.status === 'run' && caliElapsed(r) >= r.target * 1000) { caliFinish(r, d, d !== t); changed = true; }
+    else if (d < t && r.status === 'pause') { r.status = 'done'; changed = true; save(); }
+  });
+  return changed;
+}
+function caliStart() {
+  var t = todayIso(); if (caliActive() || S.cali[t]) return;
+  unlockAudio();
+  S.cali[t] = { target: S.settings.caliMin * 60, status: 'run', startAt: Date.now(), acc: 0, rounds: 0, laps: [] }; S.days[t] = 'cali'; save(); caliSchedule(); render();
+}
+function caliPause() { var a = caliActive(); if (!a || a.r.status !== 'run') return; a.r.acc = Math.min(a.r.target * 1000, caliElapsed(a.r)); a.r.startAt = 0; a.r.status = 'pause'; save(); caliSchedule(); render(); }
+function caliResume() { var a = caliActive(); if (!a || a.r.status !== 'pause') return; unlockAudio(); a.r.startAt = Date.now(); a.r.status = 'run'; save(); caliSchedule(); render(); }
+function caliLap() {
+  var a = caliActive(); if (!a || a.r.status !== 'run') return;
+  if (caliElapsed(a.r) >= a.r.target * 1000) { caliTick(); return; }
+  a.r.rounds = Math.min(999, a.r.rounds + 1); a.r.laps.push(caliElapsed(a.r)); save(); clickTone(); caliDraw(true);
+}
+function caliAdjust(day, dlt) {
+  var r = S.cali[day];
+  if (!r) { if (dlt < 0 || day > todayIso()) return; r = S.cali[day] = { target: S.settings.caliMin * 60, status: 'done', startAt: 0, acc: S.settings.caliMin * 60000, rounds: 0, laps: [] }; S.days[day] = 'cali'; }
+  if (dlt > 0) r.rounds = Math.min(999, r.rounds + 1); else if (r.rounds > 0) { if (r.laps.length >= r.rounds) r.laps.pop(); r.rounds--; }
+  save();
+}
+function caliSetTarget(min) {
+  min = clamp(parseInt(min, 10) || S.settings.caliMin, 1, 180); S.settings.caliMin = min;
+  var a = caliActive(); if (a) { a.r.target = min * 60; if (a.r.status === 'run' && caliElapsed(a.r) >= a.r.target * 1000) { caliFinish(a.r, a.day, false); return; } if (a.r.acc > a.r.target * 1000) a.r.acc = a.r.target * 1000; }
+  save(); caliSchedule();
+}
+function caliEditSheet() {
+  var val = S.settings.caliMin, a = caliActive(); if (a) val = Math.round(a.r.target / 60);
+  var PRE = [5, 10, 15, 20, 25, 30];
+  openSheet({
+    title: 'Waktu calisthenics',
+    html: function () {
+      return '<p class="note" style="margin:0 0 12px">Berapa menit untuk satu putaran AMRAP.' + (a ? ' Mengubahnya saat timer berjalan akan menambah atau memotong sisa waktu.' : ' Jadi default untuk sesi berikutnya juga.') + '</p>' +
+        '<div class="rchips" style="grid-template-columns:repeat(3,1fr)">' + PRE.map(function (m) { return '<button type="button" data-act="cpre" data-v="' + m + '" aria-pressed="' + (val === m) + '">' + m + ' mnt</button>'; }).join('') + '</div>' +
+        '<div class="field" style="margin-top:14px"><label for="cMin">Atau ketik sendiri (menit, 1 sampai 180)</label><input id="cMin" class="num" inputmode="numeric" autocomplete="off" value="' + val + '"></div>' +
+        '<button type="button" class="btn primary block" data-act="csave">Simpan</button>';
+    },
+    click: function (act, el) {
+      if (act === 'cpre') { val = parseInt(el.getAttribute('data-v'), 10); repaint(); }
+      else if (act === 'csave') { var m = clamp(parseInt(val, 10) || 0, 1, 180); if (!m) return; closeSheet(); caliSetTarget(m); render(); toast('Waktu diatur: ' + m + ' menit'); }
+    },
+    input: function (el) { if (el.id === 'cMin') val = parseInt(el.value, 10) || 0; }
+  });
+}
+function caliPop(day, r) {
+  var best = caliBest(day, r.target), isBest = r.rounds > 0 && r.rounds > best && best > 0;
+  openSheet({
+    title: 'Waktu habis', pop: true,
+    html: function () {
+      return '<svg class="tick" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="32"/><path d="M19 33l9 9 18-20"/></svg>' +
+        '<h2>Waktu habis</h2><div class="pbig ok">' + r.rounds + ' ronde</div>' +
+        '<p>' + (r.rounds * CALI_MOVES[0][0]) + ' pull up · ' + (r.rounds * CALI_MOVES[1][0]) + ' push up · ' + (r.rounds * CALI_MOVES[2][0]) + ' squat dalam ' + Math.round(r.target / 60) + ' menit.' + (isBest ? ' Rekor baru, sebelumnya ' + best + ' ronde.' : best ? ' Rekor kamu ' + Math.max(best, r.rounds) + ' ronde.' : '') + '</p>' +
+        '<div class="btnrow"><button type="button" class="btn primary" data-act="sclose">Oke</button></div>';
+    }
+  });
+}
+function lapsHTML(r) {
+  if (!r || !r.laps.length) return '';
+  var sp = caliSplits(r), best = Math.min.apply(null, sp), worst = Math.max.apply(null, sp), bi = sp.indexOf(best);
+  return '<div class="lapsh"><span>Ronde</span><span>Waktu · total</span></div><ul class="laps" id="caliLaps">' + r.laps.map(function (x, i) { return { i: i, x: x, s: sp[i] }; }).reverse().map(function (o) {
+    return '<li><span>Ronde ' + (o.i + 1) + (sp.length > 1 && best < worst && o.i === bi ? ' · tercepat' : '') + '</span><span class="num">' + fmtClock(o.s) + '</span><span class="num">' + fmtClock(o.x) + '</span></li>';
+  }).join('') + '</ul>';
+}
+function caliCardHTML() {
+  var d = ui.day, t = todayIso(), r = caliRec(d), isToday = d === t, st = r ? r.status : 'idle', tg = r ? r.target : S.settings.caliMin * 60, per = caliPerRound();
+  var h = '<div class="card cali"><div class="lbl">Calisthenics · AMRAP ' + Math.round(tg / 60) + ' menit</div><div class="routine">' +
+    CALI_MOVES.map(function (m) { return '<div class="cmv"><b>' + m[0] + '</b><span>' + m[1] + '</span></div>'; }).join('') + '</div>' +
+    '<p class="note" style="margin:6px 0 0">Satu ronde = ' + per + ' rep. Ulangi sebanyak mungkin ronde sebelum waktu habis.</p>';
+  var other = caliActive(); if (other && other.day === d) other = null;
+  if (st === 'done' || (!isToday && !r && d < t)) {
+    var rounds = r ? r.rounds : 0, best = caliBest(d, tg), sp = r ? caliSplits(r) : [];
+    h += '<div class="rstep"><button type="button" class="iconbtn" data-act="cadj" data-v="-1" aria-label="Kurangi ronde"' + (rounds ? '' : ' disabled') + '>−</button><div class="mid"><b class="num" id="caliRounds">' + rounds + '</b><span>ronde' + (r ? ' dalam ' + fmtHM(r.target * 1000).replace(' mnt', ' menit') : '') + '</span></div><button type="button" class="iconbtn" data-act="cadj" data-v="1" aria-label="Tambah ronde">+</button></div>';
+    if (r && rounds) h += '<div class="stats"><div class="stat"><span class="lbl">Pull Up</span><b>' + rounds * CALI_MOVES[0][0] + '</b></div><div class="stat"><span class="lbl">Push Up</span><b>' + rounds * CALI_MOVES[1][0] + '</b></div><div class="stat"><span class="lbl">Squat</span><b>' + rounds * CALI_MOVES[2][0] + '</b></div></div>';
+    if (r && rounds && best) h += '<p class="best">' + (rounds > best ? 'Rekor baru! Sebelumnya ' + best + ' ronde.' : rounds === best ? 'Sama dengan rekormu, ' + best + ' ronde.' : 'Rekormu ' + best + ' ronde.') + '</p>';
+    if (sp.length > 1) h += '<p class="note" style="margin:10px 0 0">Rata-rata ' + fmtClock(sp.reduce(function (a, b) { return a + b; }, 0) / sp.length) + ' per ronde.</p>';
+    h += lapsHTML(r);
+    if (!r) h += '<p class="note" style="margin:12px 0 0">Belum ada catatan. Ketuk + untuk mengisi hasil hari itu secara manual.</p>';
+    else h += '<div class="btnrow"><button type="button" class="btn" data-act="creset">' + (isToday ? 'Ulangi dari awal' : 'Hapus catatan') + '</button></div>';
+    return h + '</div>';
+  }
+  if (d > t) return h + '<p class="note" style="margin:12px 0 0">Dijadwalkan calisthenics. Timer bisa dipakai di hari H.</p></div>';
+  var rem = r ? r.target * 1000 - caliElapsed(r) : tg * 1000, pct = r ? Math.min(100, caliElapsed(r) / (r.target * 1000) * 100) : 0;
+  h += '<div class="crow"><div><div class="lbl" id="caliLbl">' + (st === 'run' ? 'Sisa waktu' : st === 'pause' ? 'Dijeda' : 'Waktu') + '</div><div class="bigclock num ' + (st === 'idle' ? 'idle' : '') + '" id="caliClock">' + fmtCount(rem) + '</div></div>' +
+    '<div class="rcount"><b class="num" id="caliRounds">' + (r ? r.rounds : 0) + '</b><span>ronde</span></div></div>' +
+    '<div class="bar"><i id="caliBar" style="width:' + pct.toFixed(1) + '%"></i></div>';
+  if (st === 'idle') {
+    h += (other ? '<p class="warnbox">Ada timer calisthenics yang masih berjalan di hari lain.</p>' : '') +
+      '<button type="button" class="lapbtn go" data-act="cstart"' + (other ? ' disabled' : '') + '>Mulai · ' + fmtClock(tg * 1000) + '</button>' +
+      '<div class="btnrow"><button type="button" class="btn" data-act="cedit">Ubah waktu</button></div>' +
+      '<p class="note" style="margin:10px 0 0">Setelah mulai, ketuk tombol besar tiap selesai satu ronde. Layar dijaga tetap menyala selama timer berjalan.</p>' +
+      '<div class="btnrow"><button type="button" class="btn" data-act="setmode" data-v="gym">Jadi gym</button><button type="button" class="btn" data-act="setmode" data-v="rest">Jadi istirahat</button></div>';
+  } else if (st === 'run') {
+    h += '<button type="button" class="lapbtn" data-act="clap" id="caliLap">+1 Ronde</button>' +
+      '<p class="note" id="caliSplit" style="margin:8px 0 0;text-align:center"></p>' +
+      '<div class="btnrow"><button type="button" class="btn" data-act="cpause">Jeda</button><button type="button" class="btn" data-act="cunlap"' + (r.rounds ? '' : ' disabled') + ' id="caliUn">−1 ronde</button><button type="button" class="btn" data-act="cedit">Ubah waktu</button></div>' +
+      '<div id="caliLapsBox">' + lapsHTML(r) + '</div>';
+  } else {
+    h += '<button type="button" class="lapbtn go" data-act="cresume">Lanjut</button>' +
+      '<div class="btnrow"><button type="button" class="btn" data-act="cfinish">Selesai</button><button type="button" class="btn" data-act="cedit">Ubah waktu</button><button type="button" class="btn" data-act="creset">Ulangi</button></div>' +
+      '<div id="caliLapsBox">' + lapsHTML(r) + '</div>';
+  }
+  return h + '</div>';
+}
+/* update ringan tanpa render ulang (dipanggil tiap detik dan saat +1 ronde) */
+function caliDraw(bump) {
+  var a = caliActive(), r = a && a.day === ui.day ? a.r : null;
+  if (!r) return;
+  var rem = r.target * 1000 - caliElapsed(r), el = $('#caliClock'), br = $('#caliBar'), rc = $('#caliRounds'), un = $('#caliUn');
+  if (el) { el.textContent = fmtCount(rem); el.className = 'bigclock num' + (r.status === 'run' && rem <= 30000 ? ' over' : r.status === 'run' && rem <= 120000 ? ' near' : ''); }
+  if (br) br.style.width = Math.min(100, caliElapsed(r) / (r.target * 1000) * 100).toFixed(1) + '%';
+  if (rc) { rc.textContent = r.rounds; if (bump) { rc.classList.remove('bump'); void rc.offsetWidth; rc.classList.add('bump'); } }
+  if (un) un.disabled = !r.rounds;
+  var lb = $('#caliLapsBox'); if (lb && bump) lb.innerHTML = lapsHTML(r);
+  var sp = $('#caliSplit'); if (sp && r.status === 'run') sp.textContent = 'Ronde ke-' + (r.rounds + 1) + ' berjalan ' + fmtClock(caliElapsed(r) - (r.laps.length ? r.laps[r.laps.length - 1] : 0));
+}
+
+/* ================= pilih hari (banyak hari sekaligus) ================= */
+function daysSheet() {
+  var span = 28, DOW = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+  function rows() {
+    var t = todayIso(), h = '';
+    for (var i = 0; i < span; i++) {
+      var d = addDays(t, -i), m = dayMode(d), locked = dayHasLogs(d), lockC = hasCali(d), dc = dayCounts(d, visibleEx());
+      var sub = locked ? dc.logged + ' alat tercatat' : lockC ? 'Calisthenics, ' + S.cali[d].rounds + ' ronde' : m === 'gym' ? 'Gym, alat belum dicatat' : m === 'cali' ? 'Calisthenics' : m === 'rest' ? 'Istirahat' : 'Belum dipilih';
+      var p = pd(d); if (i === 0) sub = 'Hari ini · ' + sub;
+      h += '<div class="dayrow' + (i === 0 ? ' today' : '') + '"><button type="button" class="dl" data-act="pkgo" data-d="' + d + '"><b>' + DOW[p.getDay()] + ', ' + dayShort(d) + '</b><small>' + esc(sub) + '</small></button>' +
+        '<div class="seg" role="group" aria-label="' + esc(dayLabel(d)) + '"><button type="button" data-act="pk" data-d="' + d + '" data-v="gym" aria-pressed="' + (m === 'gym') + '"' + (lockC ? ' disabled' : '') + '>Gym</button>' +
+        '<button type="button" data-act="pk" data-d="' + d + '" data-v="cali" aria-pressed="' + (m === 'cali') + '"' + (locked ? ' disabled' : '') + '>Cali</button>' +
+        '<button type="button" data-act="pk" data-d="' + d + '" data-v="rest" aria-pressed="' + (m === 'rest') + '"' + (locked || lockC ? ' disabled' : '') + '>Libur</button></div></div>';
+    }
+    return h + '<div class="btnrow" style="margin-top:12px"><button type="button" class="btn" data-act="pkmore">Tampilkan 28 hari lebih lama</button></div>';
+  }
+  openSheet({
+    title: 'Pilih hari',
+    html: function () { return '<p class="note" style="margin:0 0 4px">Ketuk Gym, Cali (calisthenics) atau Libur untuk tiap hari. Ketuk lagi untuk membatalkan. Ketuk tanggalnya untuk membuka dan mencatat alat hari itu.</p>' + rows(); },
+    click: function (act, el) {
+      var d = el.getAttribute('data-d');
+      if (act === 'pk') {
+        var v = el.getAttribute('data-v');
+        var lg = dayHasLogs(d), lc = hasCali(d);
+        if ((v === 'rest' && (lg || lc)) || (v === 'cali' && lg) || (v === 'gym' && lc)) return;
+        if (S.days[d] === v && !lg && !lc) delete S.days[d]; else if (!(v === 'gym' && lg) && !(v === 'cali' && lc)) S.days[d] = v;
+        save(); repaint(); render();
+      } else if (act === 'pkgo') { ui.tab = 'latihan'; ui.day = d; ui.open = null; closeSheet(); render(); toTop(); }
+      else if (act === 'pkmore') { span += 28; repaint(); }
+    }
+  });
+}
+
+/* ================= tab Riwayat ================= */
+function sessionsHTML() {
+  var byDate = {};
+  S.logs.forEach(function (l) { (byDate[l.date] = byDate[l.date] || []).push(l); });
+  Object.keys(S.cali).forEach(function (d) { if (S.cali[d].status === 'done' && !byDate[d]) byDate[d] = []; });
+  var dates = Object.keys(byDate).sort().reverse();
+  if (!dates.length) return '<p class="empty">Belum ada sesi tercatat.<br>Catat reps di tab Latihan, riwayatnya muncul di sini.</p>';
+  return dates.map(function (d) {
+    var cr = S.cali[d], crHTML = '';
+    if (cr && cr.status === 'done') crHTML = '<div class="item" style="cursor:default"><span class="main"><span class="t">Calisthenics AMRAP ' + Math.round(cr.target / 60) + ' menit</span><span class="s">' + cr.rounds * CALI_MOVES[0][0] + ' pull up · ' + cr.rounds * CALI_MOVES[1][0] + ' push up · ' + cr.rounds * CALI_MOVES[2][0] + ' squat</span></span><span class="a">' + cr.rounds + ' ronde</span></div>';
+    if (!byDate[d].length) return '<div class="ghead"><span>' + esc(dayLabel(d)) + '</span><span class="num">calisthenics</span></div><div class="listbox">' + crHTML + '</div>';
+    var ls = byDate[d].sort(function (a, b) { return a.createdAt - b.createdAt; }), c = { ok: 0, up: 0, low: 0 };
+    ls.forEach(function (l) { c[statusOf(l.reps)]++; });
+    return '<div class="ghead"><span>' + esc(dayLabel(d)) + '</span><span class="num">' + (sessDur(d) ? '⏱ ' + fmtHM(sessDur(d)) + ' · ' : '') + ls.length + ' alat · ✓' + c.ok + ' +' + c.up + ' ↓' + c.low + '</span></div><div class="listbox">' +
+      ls.map(function (l) {
+        var ex = exById(l.ex); if (!ex) return '';
+        return '<button type="button" class="item" data-act="hist" data-id="' + esc(ex.id) + '"><span class="main"><span class="t">' + esc(ex.name) + '</span><span class="s">' + (l.pos ? 'POS ' + esc(l.pos) : 'Tanpa POS') + '</span></span><span class="a">' + kg(l.weight) + ' kg × ' + repsTxt(l) + '</span>' + chipHTML(statusOf(l.reps)) + '</button>';
+      }).join('') + crHTML + '</div>';
+  }).join('');
+}
+function perAlatHTML() {
+  var rows = S.ex.map(function (e) {
+    var ls = logsOf(e.id), l = ls.length ? ls[ls.length - 1] : null, best = ls.reduce(function (m, x) { return Math.max(m, x.weight); }, 0);
+    return '<button type="button" class="item" data-act="hist" data-id="' + esc(e.id) + '"><span class="main"><span class="t">' + esc(e.name) + '</span><span class="s">' + (l ? 'Terakhir ' + dayShort(l.date) + ' · ' + ls.length + ' sesi · terbaik ' + kg(best) + ' kg' : 'Belum ada catatan · beban ' + kg(e.weight) + ' kg') + '</span></span>' + (l ? '<span class="a">' + kg(l.weight) + ' × ' + repsTxt(l) + '</span>' : '') + chipHTML(stateOf(e)) + '</button>';
+  }).join('');
+  return '<div class="listbox">' + rows + '</div>';
+}
+function chartSVG(pts) {
+  var W = 340, H = 190, L = 34, R = 12, T = 18, B = 26;
+  var ws = pts.map(function (p) { return p.weight; }), mn = Math.min.apply(null, ws), mx = Math.max.apply(null, ws);
+  if (mn === mx) { mn -= 5; mx += 5; } else { var padv = (mx - mn) * 0.15; mn -= padv; mx += padv; }
+  function X(i) { return pts.length === 1 ? (L + W - R) / 2 : L + i * (W - L - R) / (pts.length - 1); }
+  function Y(v) { return T + (H - T - B) * (1 - (v - mn) / (mx - mn)); }
+  var g = '', i, ticks = 4;
+  for (i = 0; i <= ticks; i++) {
+    var v = mn + (mx - mn) * i / ticks, y = Y(v);
+    g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) + '" style="stroke:var(--line)" stroke-width="1"/><text x="' + (L - 6) + '" y="' + (y + 4).toFixed(1) + '" text-anchor="end" font-size="10" style="fill:var(--muted)">' + kg(Math.round(v * 10) / 10) + '</text>';
+  }
+  var path = pts.map(function (p, k) { return (k ? 'L' : 'M') + X(k).toFixed(1) + ' ' + Y(p.weight).toFixed(1); }).join(' ');
+  var dots = pts.map(function (p, k) {
+    var st = statusOf(p.reps), col = st === 'up' ? 'var(--up)' : st === 'ok' ? 'var(--ok)' : 'var(--low)';
+    return '<circle cx="' + X(k).toFixed(1) + '" cy="' + Y(p.weight).toFixed(1) + '" r="5" style="fill:' + col + '" stroke-width="2" stroke="var(--surface)"/>';
+  }).join('');
+  var labs = '<text x="' + X(0).toFixed(1) + '" y="' + (H - 8) + '" font-size="10" text-anchor="' + (pts.length === 1 ? 'middle' : 'start') + '" style="fill:var(--muted)">' + dayShort(pts[0].date) + '</text>' +
+    (pts.length > 1 ? '<text x="' + X(pts.length - 1).toFixed(1) + '" y="' + (H - 8) + '" font-size="10" text-anchor="end" style="fill:var(--muted)">' + dayShort(pts[pts.length - 1].date) + '</text>' : '');
+  return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Grafik beban per sesi">' + g + (pts.length > 1 ? '<path d="' + path + '" fill="none" style="stroke:var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>' : '') + dots + labs + '</svg>';
+}
+function histSheet(exId, back) {
+  var ex = exById(exId); if (!ex) return;
+  openSheet({
+    title: ex.name, back: back || null,
+    html: function () {
+      var ls = logsOf(ex.id);
+      var sd = skipDates(ex.id), skNote = sd.length ? '<p class="note">Dilewati ' + sd.length + ' kali: ' + sd.map(dayShort).join(', ') + '.</p>' : '';
+      if (!ls.length) return '<p class="empty">Belum ada catatan untuk alat ini.</p><p class="note" style="text-align:center">Beban sekarang ' + kg(ex.weight) + ' kg' + (ex.pos ? ' · POS ' + esc(ex.pos) : '') + '.</p>' + skNote;
+      var best = ls.reduce(function (m, x) { return Math.max(m, x.weight); }, 0), first = ls[0], last = ls[ls.length - 1];
+      var body = '<div class="stats"><div class="stat"><span class="lbl">Terakhir</span><b>' + kg(last.weight) + ' kg</b></div><div class="stat"><span class="lbl">Terbaik</span><b>' + kg(best) + ' kg</b></div><div class="stat"><span class="lbl">Sejak awal</span><b>' + (last.weight - first.weight >= 0 ? '+' : '') + kg(last.weight - first.weight) + ' kg</b></div></div>' +
+        chartSVG(ls) + '<p class="note" style="margin:4px 0 12px">Titik: <span style="color:var(--ok)">●</span> di range · <span style="color:var(--up)">●</span> di atas ' + S.settings.repMax + ' (naik) · <span style="color:var(--low)">●</span> di bawah ' + S.settings.repMin + '</p>' +
+        '<table class="tbl"><thead><tr><th>Tanggal</th><th>POS</th><th class="n">Beban</th><th class="n">Reps' + (ls.some(function (x) { return x.rr != null; }) ? ' (ka/ki)' : '') + '</th><th></th></tr></thead><tbody>' +
+        ls.slice().reverse().map(function (l) { return '<tr><td>' + esc(dayShort(l.date)) + ' ' + pd(l.date).getFullYear() + '</td><td>' + esc(l.pos || '–') + '</td><td class="n">' + kg(l.weight) + ' kg</td><td class="n">' + repsTxt(l) + '</td><td>' + chipHTML(statusOf(l.reps)) + '</td></tr>'; }).join('') + '</tbody></table>' + skNote;
+      return body;
+    }
+  });
+}
+/* ---- progres mingguan / bulanan ---- */
+function mondayOf(day) { var d = pd(day), w = (d.getDay() + 6) % 7; return addDays(day, -w); }
+function monthStart(day) { return day.slice(0, 8) + '01'; }
+function monthShift(day, n) { var d = pd(monthStart(day)); d.setMonth(d.getMonth() + n); return iso(d); }
+function monthEnd(day) { var d = pd(monthShift(day, 1)); d.setDate(0); return iso(d); }
+function periodOf() {
+  if (ui.pmode === 'minggu') { var a = mondayOf(ui.pref), b = addDays(a, 6), da = pd(a), db = pd(b); return { a: a, b: b, label: da.getDate() + (da.getMonth() !== db.getMonth() ? ' ' + MON[da.getMonth()] : '') + ' – ' + db.getDate() + ' ' + MON[db.getMonth()] + ' ' + db.getFullYear() }; }
+  var m = monthStart(ui.pref), e = monthEnd(ui.pref), dm = pd(m); return { a: m, b: e, label: ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][dm.getMonth()] + ' ' + dm.getFullYear() };
+}
+function sessionCount(a, b) { var seen = {}; S.logs.forEach(function (l) { if (l.date >= a && l.date <= b) seen[l.date] = 1; }); return Object.keys(seen).length; }
+function periodStats(a, b) {
+  var today = todayIso(), st = { gym: 0, rest: 0, cali: 0, open: 0, unmarked: 0, logs: 0, ok: 0, up: 0, low: 0, comp: 0, days: 0, skip: 0 }, vis = visibleEx().length || 1, per = {}, skp = {};
+  for (var d = a; d <= b; d = addDays(d, 1)) {
+    st.days++; var m = dayMode(d);
+    if (dayHasLogs(d)) st.gym++; else if (m === 'gym') st.open++; else if (m === 'cali') { if (hasCali(d)) st.cali++; } else if (m === 'rest') st.rest++; else if (d <= today) st.unmarked++;
+  }
+  S.logs.forEach(function (l) { if (l.date < a || l.date > b) return; st.logs++; st[statusOf(l.reps)]++; per[l.date] = (per[l.date] || 0) + 1; });
+  Object.keys(S.skips).forEach(function (k) { var pr = k.split('|'); if (pr[0] >= a && pr[0] <= b && exById(pr[1])) { st.skip++; skp[pr[0]] = (skp[pr[0]] || 0) + 1; } });
+  var ds = Object.keys(per); st.comp = ds.length ? Math.round(ds.reduce(function (t, k) { return t + Math.min(1, per[k] / Math.max(1, vis - (skp[k] || 0))); }, 0) / ds.length * 100) : 0;
+  return st;
+}
+function weightChanges(a, b) {
+  var out = [];
+  S.ex.forEach(function (e) {
+    var ls = logsOf(e.id), before = null, inR = [];
+    ls.forEach(function (l) { if (l.date < a) before = l; else if (l.date <= b) inR.push(l); });
+    if (!inR.length) return;
+    var base = before ? before.weight : inR[0].weight, last = inR[inR.length - 1].weight;
+    if (last !== base) out.push({ ex: e, from: base, to: last, d: rnd(last - base) });
+  });
+  return out.sort(function (x, y) { return y.d - x.d; });
+}
+function weeksBarsSVG(endWeekStart) {
+  var n = 8, W = 340, H = 150, L = 24, R = 8, T = 14, B = 24, tgt = S.settings.weekTarget, data = [], i;
+  for (i = n - 1; i >= 0; i--) { var a = addDays(endWeekStart, -7 * i); data.push({ a: a, v: sessionCount(a, addDays(a, 6)) }); }
+  var mx = Math.max(tgt, 7 > 0 ? Math.max.apply(null, data.map(function (x) { return x.v; })) : 0, 3), bw = (W - L - R) / n, g = '';
+  function Y(v) { return T + (H - T - B) * (1 - v / mx); }
+  for (i = 0; i <= mx; i++) if (mx <= 7 || i % 2 === 0) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(i).toFixed(1) + '" y2="' + Y(i).toFixed(1) + '" style="stroke:var(--line)"/><text x="' + (L - 6) + '" y="' + (Y(i) + 3.5).toFixed(1) + '" text-anchor="end" font-size="10" style="fill:var(--muted)">' + i + '</text>';
+  var bars = data.map(function (x, k) {
+    var cx = L + bw * k + bw / 2, h = (H - T - B) * x.v / mx, cur = x.a === mondayOf(ui.pref), dd = pd(x.a);
+    return '<rect x="' + (cx - bw * 0.3).toFixed(1) + '" y="' + (Y(x.v)).toFixed(1) + '" width="' + (bw * 0.6).toFixed(1) + '" height="' + Math.max(h, x.v ? 2 : 0).toFixed(1) + '" rx="4" style="fill:' + (x.v >= tgt ? 'var(--accent)' : 'var(--up)') + ';opacity:' + (cur ? 1 : 0.72) + '"/>' +
+      (x.v ? '<text x="' + cx.toFixed(1) + '" y="' + (Y(x.v) - 4).toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--ink)">' + x.v + '</text>' : '') +
+      '<text x="' + cx.toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="9.5" style="fill:' + (cur ? 'var(--ink)' : 'var(--muted)') + '">' + dd.getDate() + '/' + (dd.getMonth() + 1) + '</text>';
+  }).join('');
+  var ty = Y(tgt).toFixed(1);
+  return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Sesi gym per minggu, 8 minggu terakhir">' + g + '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + ty + '" y2="' + ty + '" stroke-dasharray="4 3" style="stroke:var(--ok)" stroke-width="1.5"/>' + bars + '</svg>';
+}
+function calHTML(per) {
+  var head = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'].map(function (x) { return '<span class="cwd">' + x + '</span>'; }).join('');
+  var first = mondayOf(per.a), cells = '', today = todayIso();
+  for (var d = first; d <= per.b || ((pd(d).getDay() + 6) % 7) !== 0; d = addDays(d, 1)) {
+    var out = d < per.a || d > per.b, m = dayMode(d), cnt = 0;
+    if (m === 'gym') S.logs.forEach(function (l) { if (l.date === d) cnt++; });
+    var cr = m === 'cali' ? caliRec(d) : null;
+    var cls = 'cd' + (out ? ' out' : '') + (d === today ? ' today' : '') + (m === 'gym' ? (cnt ? ' g' : ' g0') : m === 'cali' ? (cr ? ' c' : ' c0') : m === 'rest' ? ' r' : '');
+    cells += '<button type="button" class="' + cls + '" data-act="goday" data-d="' + d + '" aria-label="' + esc(dayLabel(d)) + (m === 'gym' ? cnt ? ', gym ' + cnt + ' alat' : ', gym direncanakan' : m === 'cali' ? ', calisthenics' + (cr ? ' ' + cr.rounds + ' ronde' : ' direncanakan') : m === 'rest' ? ', istirahat' : '') + '"><b class="num">' + pd(d).getDate() + '</b><small>' + (m === 'gym' ? (cnt ? cnt : '·') : m === 'cali' ? (cr ? cr.rounds + 'r' : '·') : m === 'rest' ? 'R' : '') + '</small></button>';
+  }
+  return '<div class="cal">' + head + cells + '</div>';
+}
+function durBarsSVG(arr) {
+  var n = arr.length, W = 340, H = 160, L = 30, R = 8, T = 14, B = 24, tg = S.settings.targetMin, mx = Math.max(tg * 1.25, Math.max.apply(null, arr.map(function (x) { return x.min; }))), bw = (W - L - R) / Math.max(n, 6), g = '', i;
+  mx = Math.ceil(mx / 30) * 30;
+  function Y(v) { return T + (H - T - B) * (1 - v / mx); }
+  for (i = 0; i <= mx; i += 30) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(i).toFixed(1) + '" y2="' + Y(i).toFixed(1) + '" style="stroke:var(--line)"/><text x="' + (L - 5) + '" y="' + (Y(i) + 3.5).toFixed(1) + '" text-anchor="end" font-size="10" style="fill:var(--muted)">' + i + '</text>';
+  var bars = arr.map(function (x, k) {
+    var cx = L + bw * k + bw / 2, dd = pd(x.d), col = x.min <= tg ? 'var(--accent)' : x.min <= tg * 1.1 ? 'var(--up)' : 'var(--low)';
+    return '<rect x="' + (cx - bw * 0.32).toFixed(1) + '" y="' + Y(x.min).toFixed(1) + '" width="' + (bw * 0.64).toFixed(1) + '" height="' + Math.max(2, (H - T - B) * x.min / mx).toFixed(1) + '" rx="4" style="fill:' + col + '"/>' +
+      '<text x="' + cx.toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="9.5" style="fill:var(--muted)">' + dd.getDate() + '/' + (dd.getMonth() + 1) + '</text>';
+  }).join('');
+  return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Durasi sesi dalam menit"><text x="' + L + '" y="9" font-size="9.5" style="fill:var(--muted)">menit</text>' + g + '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(tg).toFixed(1) + '" y2="' + Y(tg).toFixed(1) + '" stroke-dasharray="4 3" style="stroke:var(--ok)" stroke-width="1.5"/>' + bars + '</svg>';
+}
+function durationCardHTML(per) {
+  var all = Object.keys(S.sessions).filter(function (d) { return sessDur(d); }).sort(), inR = all.filter(function (d) { return d >= per.a && d <= per.b; });
+  var tg = targetMs();
+  if (!all.length) return '<div class="card"><h2>Durasi sesi</h2><p class="note" style="margin:0">Belum ada sesi yang diukur. Tekan Mulai sesi di tab Latihan, lalu Selesai sesi setelah semua alat tertangani. Targetmu ' + fmtHM(tg) + '.</p></div>';
+  var h = '<div class="card"><h2>Durasi sesi</h2>';
+  if (inR.length) {
+    var ds = inR.map(sessDur), avg = ds.reduce(function (a, b) { return a + b; }, 0) / ds.length, within = ds.filter(function (v) { return v <= tg; }).length;
+    h += '<div class="stats" style="margin-top:0"><div class="stat"><span class="lbl">Rata-rata</span><b>' + fmtHM(avg) + '</b></div><div class="stat"><span class="lbl">Tercepat</span><b>' + fmtHM(Math.min.apply(null, ds)) + '</b></div><div class="stat"><span class="lbl">Sesuai target</span><b>' + within + ' / ' + ds.length + '</b></div></div>';
+  } else h += '<p class="note" style="margin:0 0 8px">Tidak ada sesi terukur di periode ini.</p>';
+  var last = all.filter(function (d) { return d <= per.b; }).slice(-10).map(function (d) { return { d: d, min: Math.round(sessDur(d) / 60000) }; });
+  if (last.length) h += durBarsSVG(last) + '<p class="note" style="margin:4px 0 0">10 sesi terakhir sampai periode ini. Garis hijau putus-putus = target ' + fmtHM(tg) + '. Merah = lewat lebih dari 10%.</p>';
+  return h + '</div>';
+}
+function caliBarsSVG(arr) {
+  var n = arr.length, W = 340, H = 160, L = 28, R = 8, T = 16, B = 24, mx = Math.max(4, Math.max.apply(null, arr.map(function (x) { return x.v; }))), bw = (W - L - R) / Math.max(n, 6), g = '', i;
+  mx = Math.ceil(mx / 2) * 2;
+  function Y(v) { return T + (H - T - B) * (1 - v / mx); }
+  var step = mx > 16 ? 5 : 2;
+  for (i = 0; i <= mx; i += step) g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(i).toFixed(1) + '" y2="' + Y(i).toFixed(1) + '" style="stroke:var(--line)"/><text x="' + (L - 5) + '" y="' + (Y(i) + 3.5).toFixed(1) + '" text-anchor="end" font-size="10" style="fill:var(--muted)">' + i + '</text>';
+  var top = Math.max.apply(null, arr.map(function (x) { return x.v; }));
+  var bars = arr.map(function (x, k) {
+    var cx = L + bw * k + bw / 2, dd = pd(x.d);
+    return '<rect x="' + (cx - bw * 0.3).toFixed(1) + '" y="' + Y(x.v).toFixed(1) + '" width="' + (bw * 0.6).toFixed(1) + '" height="' + Math.max(x.v ? 2 : 0, (H - T - B) * x.v / mx).toFixed(1) + '" rx="4" style="fill:' + (x.v === top && top > 0 ? 'var(--up)' : 'var(--accent)') + '"/>' +
+      '<text x="' + cx.toFixed(1) + '" y="' + (Y(x.v) - 4).toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--ink)">' + x.v + '</text>' +
+      '<text x="' + cx.toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="9.5" style="fill:var(--muted)">' + dd.getDate() + '/' + (dd.getMonth() + 1) + '</text>';
+  }).join('');
+  return '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Jumlah ronde calisthenics per sesi"><text x="' + L + '" y="9" font-size="9.5" style="fill:var(--muted)">ronde</text>' + g + bars + '</svg>';
+}
+function caliProgHTML(per) {
+  var all = Object.keys(S.cali).filter(function (d) { return S.cali[d].status === 'done'; }).sort(); if (!all.length) return '';
+  var inR = all.filter(function (d) { return d >= per.a && d <= per.b; }), h = '<div class="card"><h2>Calisthenics</h2>';
+  if (inR.length) {
+    var rs = inR.map(function (d) { return S.cali[d].rounds; }), avg = rs.reduce(function (a, b) { return a + b; }, 0) / rs.length, mx = Math.max.apply(null, rs);
+    h += '<div class="stats" style="margin-top:0"><div class="stat"><span class="lbl">Sesi</span><b>' + inR.length + '</b></div><div class="stat"><span class="lbl">Rata-rata</span><b>' + (Math.round(avg * 10) / 10).toString().replace('.', ',') + ' ronde</b></div><div class="stat"><span class="lbl">Terbaik</span><b>' + mx + ' ronde</b></div></div>';
+  } else h += '<p class="note" style="margin:0 0 8px">Tidak ada sesi calisthenics di periode ini.</p>';
+  var last = all.filter(function (d) { return d <= per.b; }).slice(-10).map(function (d) { return { d: d, v: S.cali[d].rounds }; });
+  if (last.length) h += caliBarsSVG(last) + '<p class="note" style="margin:4px 0 0">10 sesi terakhir sampai periode ini. Batang oranye = terbanyak.</p>';
+  return h + '</div>';
+}
+function progresHTML() {
+  var per = periodOf(), st = periodStats(per.a, per.b), isWeek = ui.pmode === 'minggu', tgt = isWeek ? S.settings.weekTarget : Math.round(S.settings.weekTarget * st.days / 7);
+  var wc = weightChanges(per.a, per.b), ready = visibleEx().filter(function (e) { return stateOf(e) === 'up'; }), low = visibleEx().filter(function (e) { return stateOf(e) === 'low'; });
+  var pct = tgt ? Math.min(100, Math.round(st.gym / tgt * 100)) : 0;
+  var html = '<div class="seg" style="margin-bottom:2px"><button type="button" data-act="pm" data-v="minggu" aria-pressed="' + isWeek + '">Mingguan</button><button type="button" data-act="pm" data-v="bulan" aria-pressed="' + !isWeek + '">Bulanan</button></div>' +
+    '<div class="stepper" style="margin:0"><button class="iconbtn" data-act="pprev" type="button" aria-label="Sebelumnya">' + BACK_SVG + '</button><div class="lab">' + esc(per.label) + '</div><button class="iconbtn" data-act="pnext" type="button" aria-label="Berikutnya" style="transform:scaleX(-1)">' + BACK_SVG + '</button>' + ((isWeek ? mondayOf(ui.pref) !== mondayOf(todayIso()) : monthStart(ui.pref) !== monthStart(todayIso())) ? '<button class="pill" data-act="pnow" type="button">Sekarang</button>' : '') + '</div>';
+  html += '<div class="card"><div class="stats" style="margin-top:0"><div class="stat"><span class="lbl">Sesi gym</span><b>' + st.gym + '<small style="font-weight:600;color:var(--muted)"> / ' + tgt + '</small></b></div><div class="stat"><span class="lbl">Istirahat</span><b>' + st.rest + ' hari</b></div><div class="stat"><span class="lbl">Kelengkapan</span><b>' + (st.gym ? st.comp + '%' : '–') + '</b></div></div>' +
+    '<div class="bar"><i style="width:' + pct + '%"></i></div><p class="note">' + (st.gym >= tgt && tgt ? 'Target ' + (isWeek ? 'minggu ini' : 'bulan ini') + ' tercapai.' : st.gym + ' dari target ' + tgt + ' sesi.') + (st.unmarked ? ' ' + st.unmarked + ' hari belum ditandai gym/istirahat.' : '') + '</p>' + calHTML(per) +
+    '<p class="note" style="margin-top:10px">Kotak hijau = gym (angka = jumlah alat dicatat), kotak biru muda = calisthenics (angka = ronde), R = istirahat, garis putus-putus = belum dicatat. Ketuk tanggal untuk membukanya.</p></div>';
+  html += durationCardHTML(per);
+  html += caliProgHTML(per);
+  html += '<div class="card"><h2>Kualitas reps</h2><div class="stats" style="margin:0"><div class="stat"><span class="lbl">✓ di range</span><b style="color:var(--ok-ink)">' + st.ok + '</b></div><div class="stat"><span class="lbl">+ naik beban</span><b style="color:var(--up-ink)">' + st.up + '</b></div><div class="stat"><span class="lbl">↓ terlalu berat</span><b style="color:var(--low-ink)">' + st.low + '</b></div></div><p class="note" style="margin-top:0">' + st.logs + ' catatan alat pada periode ini.' + (st.skip ? ' ' + st.skip + ' alat dilewati (tidak mengurangi kelengkapan).' : '') + '</p></div>';
+  html += '<div class="card"><h2>Kenaikan beban</h2>' + (wc.length ? '<div class="listbox">' + wc.map(function (c) { return '<button type="button" class="item" data-act="hist" data-id="' + esc(c.ex.id) + '"><span class="main"><span class="t">' + esc(c.ex.name) + '</span><span class="s">' + kg(c.from) + ' → ' + kg(c.to) + ' kg</span></span><span class="a" style="color:' + (c.d > 0 ? 'var(--ok-ink)' : 'var(--low-ink)') + '">' + (c.d > 0 ? '+' : '') + kg(c.d) + ' kg</span></button>'; }).join('') + '</div>' : '<p class="note" style="margin:0">Belum ada perubahan beban di periode ini.</p>') + '</div>';
+  html += '<div class="card"><h2>Sesi per minggu</h2>' + weeksBarsSVG(mondayOf(ui.pref)) + '<p class="note" style="margin:4px 0 0">8 minggu terakhir sampai periode ini. Garis hijau putus-putus = target ' + S.settings.weekTarget + ' sesi per minggu.</p></div>';
+  if (ready.length || low.length) html += '<div class="card"><h2>Saat ini</h2>' + (ready.length ? '<p class="note" style="margin:0 0 8px"><b>Siap naik beban (+):</b> ' + ready.map(function (e) { var sg = suggestion(e); return esc(e.name) + ' (' + kg(e.weight) + ' → ' + kg(sg.weight) + ')'; }).join(', ') + '.</p>' : '') + (low.length ? '<p class="note" style="margin:0"><b>Terlalu berat (↓):</b> ' + low.map(function (e) { return esc(e.name); }).join(', ') + '.</p>' : '') + '</div>';
+  return html;
+}
+function riwayatHTML() {
+  return ui.hmode === 'progres' ? progresHTML() : ui.hmode === 'sesi' ? sessionsHTML() : perAlatHTML();
+}
+
+/* ================= tab Alat ================= */
+var GRIP_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg>';
+function alatHTML() {
+  if (!S.ex.length) return '<p class="empty">Belum ada alat. Ketuk + di kanan atas.</p>';
+  return '<div class="listbox" id="alatBox">' + S.ex.map(function (e, i) {
+    return '<div class="item arow" data-id="' + esc(e.id) + '" style="cursor:default"><button type="button" class="item" style="flex:1;padding:0;border:0;min-width:0" data-act="editex" data-id="' + esc(e.id) + '"><span class="no">' + numOf(e) + '</span><span class="main"><span class="t">' + esc(e.name) + (e.hidden ? ' (disembunyikan)' : '') + '</span><span class="s">' + (mgEff(e) !== 'other' ? '<b class="mgl' + (isPrioEx(e) ? ' pr' : '') + '">' + esc(MG[mgEff(e)]) + '</b> · ' : '') + (e.pos ? 'POS ' + esc(e.pos) + ' · ' : '') + kg(e.weight) + ' kg' + (e.wnote ? ' · ' + esc(e.wnote) : '') + (e.sides === 2 ? ' · 2 set' : '') + (e.rest > 0 ? ' · istirahat ' + fmtRest(e.rest) : '') + '</span></span></button>' +
+      '<span class="mv"><button type="button" data-act="up" data-id="' + esc(e.id) + '" aria-label="Naik"' + (i === 0 ? ' disabled' : '') + '>▲</button><button type="button" data-act="down" data-id="' + esc(e.id) + '" aria-label="Turun"' + (i === S.ex.length - 1 ? ' disabled' : '') + '>▼</button>' +
+      '<button type="button" class="grip" data-grip="' + esc(e.id) + '" aria-label="Seret untuk memindahkan ' + esc(e.name) + '">' + GRIP_SVG + '</button></span></div>';
+  }).join('') + '</div><p class="note">Nomor otomatis mengikuti urutan. Pindahkan dengan ▲▼, atau tahan ikon titik-titik di kanan lalu seret. Urutan di sini = urutan di tab Latihan. Ketuk alat untuk mengubah beban, POS, atau menyembunyikannya.</p>';
+}
+/* ---- seret untuk mengurutkan ---- */
+var drag = null;
+function dragStart(e, grip) {
+  if (drag) return;
+  var row = grip.closest('.arow'), box = row && row.parentNode; if (!row) return;
+  var rows = [].slice.call(box.querySelectorAll('.arow')), sc = $('#scroll'), from = rows.indexOf(row), st = sc.scrollTop;
+  var tops = rows.map(function (r) { return r.getBoundingClientRect().top + st; }), hs = rows.map(function (r) { return r.offsetHeight; });
+  var gap = rows.length > 1 ? Math.abs(tops[1] - tops[0]) : hs[0];
+  drag = { row: row, box: box, rows: rows, from: from, to: from, startY: e.clientY, lastY: e.clientY, sc: sc, st0: st, tops: tops, hs: hs, gap: gap, pid: e.pointerId, grip: grip, raf: 0 };
+  row.classList.add('dragging'); box.classList.add('dragbox'); document.body.classList.add('dragmode');
+  try { grip.setPointerCapture(e.pointerId); } catch (x) {}
+  try { if (navigator.vibrate) navigator.vibrate(12); } catch (x) {}
+  dragLoop();
+}
+function dragUpdate() {
+  var D = drag; if (!D) return;
+  var dy = D.lastY - D.startY + (D.sc.scrollTop - D.st0), center = D.tops[D.from] + D.hs[D.from] / 2 + dy, k = 0;
+  D.rows.forEach(function (r, i) { if (i !== D.from && D.tops[i] + D.hs[i] / 2 < center) k++; });
+  D.to = k; D.row.style.transform = 'translateY(' + dy + 'px)';
+  D.rows.forEach(function (r, i) {
+    if (i === D.from) return;
+    var sh = 0; if (D.from < D.to && i > D.from && i <= D.to) sh = -D.gap; else if (D.from > D.to && i >= D.to && i < D.from) sh = D.gap;
+    r.style.transform = sh ? 'translateY(' + sh + 'px)' : '';
+  });
+}
+function dragLoop() {
+  var D = drag; if (!D) return;
+  var r = D.sc.getBoundingClientRect(), edge = 70, sp = 0;
+  if (D.lastY < r.top + edge) sp = -Math.ceil((r.top + edge - D.lastY) / 5); else if (D.lastY > r.bottom - edge) sp = Math.ceil((D.lastY - (r.bottom - edge)) / 5);
+  if (sp) D.sc.scrollTop += Math.max(-18, Math.min(18, sp));
+  dragUpdate(); D.raf = requestAnimationFrame(dragLoop);
+}
+function dragEnd(cancel) {
+  var D = drag; if (!D) return; drag = null; cancelAnimationFrame(D.raf);
+  try { D.grip.releasePointerCapture(D.pid); } catch (x) {}
+  D.rows.forEach(function (r) { r.style.transform = ''; r.classList.remove('dragging'); }); D.box.classList.remove('dragbox'); document.body.classList.remove('dragmode');
+  if (cancel || D.to === D.from) { return; }
+  var m = S.ex.splice(D.from, 1)[0]; S.ex.splice(D.to, 0, m); save(); render();
+  var from = D.from, to = D.to;
+  toast(m.name + ' dipindah ke nomor ' + numOf(m), function () { var x = S.ex.splice(to, 1)[0]; S.ex.splice(from, 0, x); save(); render(); });
+}
+function exSheet(id) {
+  var orig = id ? exById(id) : null, confirmDel = false, err = '';
+  var d = orig ? { no: orig.no, name: orig.name, detail: orig.detail, pos: orig.pos, weight: orig.weight, wnote: orig.wnote, step: orig.step, hidden: orig.hidden, mg: orig.mg || '', kind: orig.kind, sides: orig.sides, rest: orig.rest }
+    : { no: String(S.ex.length + 1), name: '', detail: '', pos: '', weight: 0, wnote: '', step: 0, hidden: false, mg: '', kind: 'iso', sides: 1, rest: 0 };
+  openSheet({
+    title: orig ? 'Ubah alat' : 'Alat baru',
+    html: function () {
+      return '<div class="field"><label for="xName">Nama alat</label><input id="xName" autocomplete="off" value="' + esc(d.name) + '" placeholder="mis. Hip Flexor"></div>' +
+        '<div class="field"><label for="xDet">Gerakan / otot (opsional)</label><input id="xDet" autocomplete="off" value="' + esc(d.detail) + '" placeholder="mis. Hip Flexion"></div>' +
+        '<div class="field"><label for="xPos">POS (jok/setelan)</label><input id="xPos" autocomplete="off" value="' + esc(d.pos) + '" placeholder="mis. 3"></div>' +
+        '<div class="two"><div class="field"><label for="xW">Beban (kg)</label><input id="xW" class="num" inputmode="decimal" value="' + (d.weight ? kg(d.weight) : '') + '"></div><div class="field"><label for="xStep">Kenaikan (kg)</label><input id="xStep" class="num" inputmode="decimal" value="' + (d.step ? kg(d.step) : '') + '" placeholder="' + kg(S.settings.step) + ' (default)"></div></div>' +
+        '<div class="field"><label for="xMg">Kelompok otot (untuk prioritas)</label><select id="xMg"><option value=""' + (!d.mg ? ' selected' : '') + '>Otomatis dari nama' + (d.name.trim() ? ' (' + MG[mgOf(d.name)] + ')' : '') + '</option>' + MG_ORDER.map(function (k) { return '<option value="' + k + '"' + (d.mg === k ? ' selected' : '') + '>' + MG[k] + '</option>'; }).join('') + '</select></div>' +
+        '<div class="field"><label for="xKind">Jenis gerakan (menentukan waktu istirahat)</label><select id="xKind">' + ['iso', 'comp', 'leg'].map(function (k) { return '<option value="' + k + '"' + (d.kind === k ? ' selected' : '') + '>' + KIND_NAME[k] + ' · ' + fmtRest(k === 'leg' ? S.settings.restLeg : k === 'comp' ? S.settings.restComp : S.settings.restIso) + '</option>'; }).join('') + '</select></div>' +
+        '<div class="two"><div class="field"><label for="xSides">Set</label><select id="xSides"><option value="1"' + (d.sides === 1 ? ' selected' : '') + '>1 set</option><option value="2"' + (d.sides === 2 ? ' selected' : '') + '>2 set (kanan + kiri)</option></select></div>' +
+        '<div class="field"><label for="xRest">Istirahat</label><select id="xRest"><option value="0"' + (!d.rest ? ' selected' : '') + '>Sesuai jenis</option>' + [15, 30, 45, 60, 90, 120, 180, 300].map(function (v) { return '<option value="' + v + '"' + (d.rest === v ? ' selected' : '') + '>' + fmtRest(v) + '</option>'; }).join('') + '</select></div></div>' +
+        '<div class="field"><label for="xNote">Catatan beban (opsional)</label><input id="xNote" autocomplete="off" value="' + esc(d.wnote) + '" placeholder="mis. 35/20 sa"></div>' +
+        '<div class="setrow"><span>Sembunyikan dari Latihan<span class="sub">Riwayatnya tetap tersimpan</span></span><input type="checkbox" id="xHide" style="width:22px;height:22px;accent-color:var(--accent)"' + (d.hidden ? ' checked' : '') + '></div>' +
+        (err ? '<p class="warnbox">' + esc(err) + '</p>' : '') +
+        '<div class="btnrow" style="margin-top:14px">' + (orig ? '<button type="button" class="btn ' + (confirmDel ? 'danger' : '') + '" data-act="xdel">' + (confirmDel ? 'Ketuk lagi: hapus + riwayat' : 'Hapus') + '</button>' : '') + '<button type="button" class="btn primary" data-act="xok">Simpan</button></div>';
+    },
+    click: function (act) {
+      if (act === 'xdel') {
+        if (!confirmDel) { confirmDel = true; repaint(); return; }
+        S.ex = S.ex.filter(function (e) { return e.id !== orig.id; }); S.logs = S.logs.filter(function (l) { return l.ex !== orig.id; }); Object.keys(S.skips).forEach(function (k) { if (k.split('|')[1] === orig.id) delete S.skips[k]; });
+        if (ui.open === orig.id) { ui.open = null; ui.draft = null; }
+        save(); closeSheet(); render(); toast('Alat dihapus');
+      } else if (act === 'xok') {
+        var name = d.name.trim(); if (!name) { err = 'Nama alat belum diisi.'; repaint(); return; }
+        var row = { no: orig ? orig.no : String(S.ex.length + 1), name: name, detail: d.detail.trim(), pos: d.pos.trim(), weight: d.weight, wnote: d.wnote.trim(), step: d.step, hidden: d.hidden, mg: d.mg, kind: d.kind, sides: d.sides, rest: d.rest };
+        if (orig) { for (var k in row) orig[k] = row[k]; }
+        else { row.id = uid(); row.st = ''; S.ex.push(row); }
+        save(); closeSheet(); render(); toast(orig ? 'Perubahan disimpan' : 'Alat ditambahkan');
+      }
+    },
+    input: function (el) {
+      var id = el.id;
+      if (id === 'xName') d.name = el.value; else if (id === 'xDet') d.detail = el.value; else if (id === 'xPos') d.pos = el.value;
+      else if (id === 'xW') d.weight = parseKg(el.value); else if (id === 'xStep') d.step = parseKg(el.value); else if (id === 'xNote') d.wnote = el.value;
+    },
+    change: function (el) { if (el.id === 'xHide') d.hidden = el.checked; else if (el.id === 'xKind') d.kind = el.value; else if (el.id === 'xMg') d.mg = el.value; else if (el.id === 'xSides') d.sides = +el.value; else if (el.id === 'xRest') d.rest = +el.value; }
+  });
+}
+function sessEditSheet(day) {
+  var x = sess(day); if (!x) return;
+  var d = { st: hhmm(x.start), en: x.end ? hhmm(x.end) : '' }, err = '', armed = false, running = !x.end && day === todayIso();
+  openSheet({
+    title: 'Ubah waktu sesi',
+    html: function () {
+      return '<p class="note" style="margin-top:0">' + esc(dayLabel(day)) + (running ? '. Sesi masih berjalan, jadi hanya jam mulai yang bisa diubah.' : '. Isi dua-duanya.') + '</p>' +
+        '<div class="two"><div class="field"><label for="tSt">Mulai</label><input id="tSt" type="time" value="' + d.st + '"></div>' +
+        (running ? '' : '<div class="field"><label for="tEn">Selesai</label><input id="tEn" type="time" value="' + d.en + '"></div>') + '</div>' +
+        (err ? '<p class="warnbox">' + esc(err) + '</p>' : '') +
+        '<div class="btnrow" style="margin-top:6px"><button type="button" class="btn ' + (armed ? 'danger' : '') + '" data-act="tdel">' + (armed ? 'Ketuk lagi: hapus sesi' : 'Hapus sesi') + '</button><button type="button" class="btn primary" data-act="tok">Simpan</button></div>';
+    },
+    click: function (act) {
+      if (act === 'tdel') { if (!armed) { armed = true; repaint(); return; } delete S.sessions[day]; save(); closeSheet(); render(); toast('Sesi dihapus'); }
+      else if (act === 'tok') {
+        if (!d.st) { err = 'Jam mulai belum diisi.'; repaint(); return; }
+        var ns = atTime(day, d.st), ne = running ? 0 : (d.en ? atTime(day, d.en) : 0);
+        if (!running && !ne) { err = 'Jam selesai belum diisi.'; repaint(); return; }
+        if (ne && ne <= ns) { err = 'Jam selesai harus setelah jam mulai.'; repaint(); return; }
+        if (running && ns > Date.now()) { err = 'Jam mulai tidak boleh di masa depan.'; repaint(); return; }
+        x.start = ns; x.end = ne; save(); closeSheet(); render(); toast('Waktu sesi diperbarui');
+      }
+    },
+    input: function (el) { if (el.id === 'tSt') d.st = el.value; else if (el.id === 'tEn') d.en = el.value; }
+  });
+}
+function moveEx(id, dir) {
+  var i = -1; S.ex.forEach(function (e, k) { if (e.id === id) i = k; });
+  var j = i + dir; if (i < 0 || j < 0 || j >= S.ex.length) return;
+  var t = S.ex[i]; S.ex[i] = S.ex[j]; S.ex[j] = t; save(); render();
+}
+
+/* ================= tab Atur ================= */
+function exportText() { return JSON.stringify({ v: 1, exportedAt: new Date().toISOString(), settings: S.settings, ex: S.ex, logs: S.logs, days: S.days, skips: S.skips, sessions: S.sessions, cali: S.cali, prevOrder: S.prevOrder }, null, 1); }
+function csvText() {
+  function q(v) { v = String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  var rows = ['Tanggal,Alat,POS,Beban (kg),Reps,Reps kanan,Reps kiri,Status'];
+  S.logs.slice().sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : a.createdAt - b.createdAt; }).forEach(function (l) {
+    var ex = exById(l.ex); rows.push([l.date, q(ex ? ex.name : '?'), q(l.pos), String(l.weight).replace('.', ','), l.reps, l.rr != null ? l.rr : '', l.rl != null ? l.rl : '', statusOf(l.reps) === 'up' ? 'naik' : statusOf(l.reps) === 'ok' ? 'ok' : 'di bawah range'].join(','));
+  });
+  Object.keys(S.cali).sort().forEach(function (d) { var r = S.cali[d]; if (r.status === 'done') rows.push([d, q('Calisthenics AMRAP ' + Math.round(r.target / 60) + ' mnt (ronde)'), '', '', r.rounds, '', '', ''].join(',')); });
+  return '﻿' + rows.join('\r\n');
+}
+function download(name, text, mime) {
+  var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: mime })); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 4000); return true;
+}
+function deliver(name, text, mime) {
+  var file = null; try { file = new File([text], name, { type: mime }); } catch (e) {}
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) return navigator.share({ files: [file], title: name }).then(function () { return true; }).catch(function (e) { return e && e.name === 'AbortError' ? false : download(name, text, mime); });
+  return Promise.resolve(download(name, text, mime));
+}
+function copyText(text) {
+  function fb() { var ta = document.createElement('textarea'); ta.value = text; ta.style.cssText = 'position:fixed;opacity:0;top:0'; document.body.appendChild(ta); ta.focus(); ta.select(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove(); return ok; }
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fb(); });
+  return Promise.resolve(fb());
+}
+function markBackup() { S.settings.lastBackup = Date.now(); save(); }
+function doRestore(text) {
+  var obj; try { obj = sanitize(JSON.parse(text)); } catch (e) { obj = null; }
+  if (!obj) return false; S = obj; save(); caliSchedule(); ui.open = null; ui.draft = null; ui.day = todayIso(); return true;
+}
+function restoreSheet() {
+  var text = '', armed = false, err = '';
+  openSheet({
+    title: 'Pulihkan cadangan',
+    html: function () {
+      return '<p class="note" style="margin-top:0">Pilih file cadangan (.json) atau tempel isinya. Data sekarang akan diganti.</p>' +
+        '<div class="field"><label for="rFile">File cadangan</label><input id="rFile" type="file" accept=".json,application/json,text/plain"></div>' +
+        '<div class="field"><label for="rText">Atau tempel teks</label><textarea id="rText" rows="4" autocapitalize="none" spellcheck="false" placeholder="{ ... }">' + esc(text) + '</textarea></div>' +
+        (err ? '<p class="warnbox">' + esc(err) + '</p>' : '') +
+        '<button type="button" class="btn block ' + (armed ? 'danger' : 'primary') + '" data-act="go">' + (armed ? 'Ketuk lagi: ganti data sekarang' : 'Pulihkan') + '</button>';
+    },
+    click: function (act) {
+      if (act !== 'go') return;
+      if (!text.trim()) { err = 'Belum ada file atau teks.'; repaint(); return; }
+      if (S.logs.length && !armed) { armed = true; err = ''; repaint(); return; }
+      if (doRestore(text)) { closeSheet(); render(); toast('Data dipulihkan (' + S.logs.length + ' catatan)'); } else { armed = false; err = 'File ini bukan cadangan Gym Tracker.'; repaint(); }
+    },
+    input: function (el) { if (el.id === 'rText') text = el.value; },
+    change: function (el) { if (el.id === 'rFile' && el.files && el.files[0]) { var fr = new FileReader(); fr.onload = function () { text = String(fr.result || ''); armed = false; err = ''; repaint(); }; fr.readAsText(el.files[0]); } }
+  });
+}
+var wipeArmed = false;
+function aturHTML() {
+  var st = S.settings, lb = st.lastBackup ? Math.floor((Date.now() - st.lastBackup) / 864e5) : null;
+  function opt(v, l, sel) { return '<option value="' + esc(v) + '"' + (sel ? ' selected' : '') + '>' + esc(l) + '</option>'; }
+  var mins = '', maxs = '', steps = '', i;
+  for (i = 1; i <= 12; i++) { mins += opt(i, i, st.repMin === i); maxs += opt(i, i, st.repMax === i); }
+  [1, 1.25, 2, 2.5, 5, 7.5, 10].forEach(function (v) { steps += opt(v, kg(v) + ' kg', st.step === v); });
+  var RS = [30, 45, 60, 90, 120, 150, 180, 240, 300, 360, 420, 600];
+  function restOpts(cur) { return RS.map(function (v) { return opt(v, fmtRest(v), cur === v); }).join(''); }
+  var pr = S.settings.prio || [];
+  return '<div class="card"><div class="sect">Prioritas otot</div>' +
+    '<p class="note" style="margin:0">Pilih otot yang mau diutamakan. Gerakannya tetap sama, hanya urutannya: alat otot itu dipindah ke depan supaya dikerjakan saat tenaga masih segar (ditandai ★ di tab Latihan).</p>' +
+    '<div class="prio" role="group" aria-label="Prioritas otot">' + ['chest', 'arm', 'lats'].map(function (k) { return '<button type="button" data-act="prio" data-v="' + k + '" aria-pressed="' + (pr.indexOf(k) >= 0) + '">' + PRIO[k].label + '</button>'; }).join('') + '</div>' +
+    '<div class="btnrow"><button type="button" class="btn" data-act="prioapply">Susun ulang sekarang</button>' + (S.prevOrder && S.prevOrder.length ? '<button type="button" class="btn" data-act="priorestore">Kembalikan urutan sebelumnya</button>' : '') + '</div>' +
+    '<p class="note" style="margin:12px 0 0"><b>Aturan urutan:</b> compound otot prioritas, lalu isolasinya. Arm (kalau dipilih) langsung sesudah chest dan lats supaya tenaga angkatan utama tidak terkuras. Bahu dan triceps (bantu chest), biceps dan grip (bantu lats) ditaruh sesudah otot utamanya. Leg press dan punggung bawah tidak di depan. Betis, core, dan lengan bawah paling akhir. Alat yang nilainya sama dalam aturan ini tetap pada posisimu sekarang. Alat baru? Ketuk Susun ulang sekarang.</p></div>' +
+    '<div class="card"><div class="sect">Target latihan</div>' +
+    '<div class="setrow"><span>Rep minimum<span class="sub">Di bawah ini = ↓ (terlalu berat)</span></span><select data-set="repMin" aria-label="Rep minimum">' + mins + '</select></div>' +
+    '<div class="setrow"><span>Rep maksimum<span class="sub">Di atas ini = + (naik beban)</span></span><select data-set="repMax" aria-label="Rep maksimum">' + maxs + '</select></div>' +
+    '<div class="setrow"><span>Kenaikan beban<span class="sub">Default, bisa diubah per alat</span></span><select data-set="step" aria-label="Kenaikan beban">' + steps + '</select></div>' +
+    '<div class="setrow"><span>Target durasi sesi<span class="sub">Dari Mulai sampai Selesai sesi</span></span><select data-set="targetMin" aria-label="Target durasi sesi">' + [45, 60, 75, 90, 105, 120, 150].map(function (v) { return opt(v, fmtHM(v * 60000), st.targetMin === v); }).join('') + '</select></div>' +
+    '<div class="setrow"><span>Waktu calisthenics<span class="sub">AMRAP: 5 pull up, 10 push up, 15 squat</span></span><select data-set="caliMin" aria-label="Waktu calisthenics">' + (function () { var l = [5, 10, 12, 15, 20, 25, 30, 40, 45, 60]; if (l.indexOf(st.caliMin) < 0) { l.push(st.caliMin); l.sort(function (a, b) { return a - b; }); } return l; })().map(function (v) { return opt(v, v + ' menit', st.caliMin === v); }).join('') + '</select></div>' +
+    '<div class="setrow"><span>Target sesi per minggu<span class="sub">Full body, dipakai di tab Progres</span></span><select data-set="weekTarget" aria-label="Target sesi per minggu">' + [1, 2, 3, 4, 5, 6, 7].map(function (v) { return opt(v, v + ' sesi', st.weekTarget === v); }).join('') + '</select></div>' +
+    '<div class="setrow"><span>Istirahat isolasi<span class="sub">Fly, curl, raise, extension, dll</span></span><select data-set="restIso" aria-label="Istirahat isolasi">' + restOpts(st.restIso) + '</select></div>' +
+    '<div class="setrow"><span>Istirahat compound<span class="sub">Row, press, pulldown, RDL</span></span><select data-set="restComp" aria-label="Istirahat compound">' + restOpts(st.restComp) + '</select></div>' +
+    '<div class="setrow"><span>Istirahat Leg Press</span><select data-set="restLeg" aria-label="Istirahat Leg Press">' + restOpts(st.restLeg) + '</select></div>' +
+    '<div class="setrow"><span>Tema</span><select data-set="theme" aria-label="Tema">' + opt('auto', 'Otomatis', st.theme === 'auto') + opt('light', 'Terang', st.theme === 'light') + opt('dark', 'Gelap', st.theme === 'dark') + '</select></div></div>' +
+    '<div class="card"><div class="sect">Data</div><p class="note" style="margin:0 0 12px">Semua catatan tersimpan di HP ini saja. ' + (lb === null ? 'Belum pernah dicadangkan.' : lb === 0 ? 'Dicadangkan hari ini.' : 'Terakhir dicadangkan ' + lb + ' hari lalu.') + (storageOk ? '' : ' <b>Penyimpanan browser diblokir, data hilang saat ditutup.</b>') + '</p>' +
+    '<div class="btnrow"><button type="button" class="btn primary" data-act="bk">Simpan cadangan</button><button type="button" class="btn" data-act="bkc">Salin teks</button></div>' +
+    '<div class="btnrow" style="margin-top:10px"><button type="button" class="btn" data-act="rs">Pulihkan</button><button type="button" class="btn" data-act="csv">Ekspor CSV</button></div></div>' +
+    '<p class="note" style="margin:0 4px">Foto contoh gerakan: Free Exercise DB (domain publik, Unlicense). Kecocokan dengan alat di gym-mu bisa berbeda tipis.</p>' +
+    '<div class="card"><div class="sect">Zona hati-hati</div><button type="button" class="btn block ' + (wipeArmed ? 'danger' : '') + '" data-act="wipe">' + (wipeArmed ? 'Ketuk lagi: hapus semua data' : 'Hapus semua data') + '</button>' +
+    '<button type="button" class="btn block" style="margin-top:10px" data-act="reseed">Kembalikan daftar alat awal (riwayat tetap)</button></div>';
+}
+
+/* ================= render ================= */
+var TITLES = { latihan: 'Latihan', riwayat: 'Riwayat', alat: 'Alat', atur: 'Pengaturan' };
+function render() {
+  var t = ui.tab;
+  $('#title').textContent = TITLES[t];
+  $('#btnAdd').hidden = t !== 'alat';
+  $('#btnDays').hidden = t !== 'latihan' && t !== 'riwayat';
+  [].forEach.call(document.querySelectorAll('#tabs button'), function (b) { if (b.getAttribute('data-tab') === t) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  var ctl = $('#ctl'), sub = '', html = '';
+  if (t === 'latihan') {
+    var list = visibleEx(), dcx = dayCounts(ui.day, list), n = dcx.n;
+    var dm = dayMode(ui.day);
+    var cr = caliRec(ui.day);
+    sub = relDay(ui.day) + ' · ' + (dm === 'rest' ? 'istirahat' : dm === '' ? 'belum dipilih' : dm === 'cali' ? 'calisthenics' + (cr && cr.status === 'done' ? ', ' + cr.rounds + ' ronde' : '') : n + ' dari ' + list.length + ' alat' + (dcx.skipped ? ' (' + dcx.skipped + ' dilewati)' : ''));
+    html = '<div class="stepper"><button class="iconbtn" data-act="dprev" type="button" aria-label="Hari sebelumnya"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>' +
+      '<div class="lab"><span>' + esc(dayLabel(ui.day)) + '</span><input type="date" id="dayPick" value="' + ui.day + '" aria-label="Pilih tanggal"></div>' +
+      '<button class="iconbtn" data-act="dnext" type="button" aria-label="Hari berikutnya"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>' +
+      (ui.day !== todayIso() ? '<button class="pill" data-act="dnow" type="button">Hari ini</button>' : '') + '</div>' +
+      (dm === 'gym' ? '<div class="prog"><div class="bar"><i style="width:' + (list.length ? (n / list.length * 100).toFixed(1) : 0) + '%"></i></div></div>' : '');
+  } else if (t === 'riwayat') {
+    sub = S.logs.length + ' catatan';
+    html = '<div class="seg s3" style="margin-top:8px"><button type="button" data-act="hm" data-v="progres" aria-pressed="' + (ui.hmode === 'progres') + '">Progres</button><button type="button" data-act="hm" data-v="sesi" aria-pressed="' + (ui.hmode === 'sesi') + '">Per sesi</button><button type="button" data-act="hm" data-v="alat" aria-pressed="' + (ui.hmode === 'alat') + '">Per alat</button></div>';
+  } else if (t === 'alat') sub = S.ex.length + ' alat';
+  else sub = 'Target, cadangan, tema';
+  $('#subtitle').textContent = sub; ctl.innerHTML = html;
+  $('#app').innerHTML = t === 'latihan' ? latihanHTML() : t === 'riwayat' ? riwayatHTML() : t === 'alat' ? alatHTML() : aturHTML();
+  applyTheme(); drawTimer(); updateClock();
+}
+function applyTheme() { var th = S.settings.theme, r = document.documentElement; if (th === 'light' || th === 'dark') r.setAttribute('data-theme', th); else r.removeAttribute('data-theme'); }
+function toTop() { var s = $('#scroll'); if (s) s.scrollTop = 0; }
+
+/* ================= aksi ================= */
+function openExercise(id) {
+  if (ui.open === id) { ui.open = null; ui.draft = null; render(); return; }
+  var ex = exById(id), log = dayLogs(ui.day)[id];
+  ui.open = id; ui.draft = { weight: log ? log.weight : ex.weight, reps: log ? log.reps : null, rr: log ? (log.rr != null ? log.rr : log.reps) : null, rl: log ? (log.rl != null ? log.rl : log.reps) : null }; render();
+  var row = document.querySelector('.wrow[data-ex="' + id + '"]'); if (row && row.scrollIntoView) { try { row.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {} }
+}
+function refreshDraftUi() {
+  var ex = exById(ui.open); if (!ex) return;
+  var fb = feedbackFor(ex, ui.draft), el = $('#fb'); if (el) { el.className = 'fb ' + fb.c; el.textContent = fb.t; }
+  var b = $('#dSave'); if (b) b.disabled = ui.draft.reps == null || !(ui.draft.weight > 0);
+}
+var autoStarted = false;
+function finishPop(x) {
+  var du = x.end - x.start, tg = targetMs(), diff = du - tg, cls = diff <= 0 ? 'ok' : 'over';
+  openSheet({
+    title: 'Sesi selesai', pop: true,
+    html: function () {
+      return '<svg class="tick" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="32"/><path d="M19 33l9 9 18-20"/></svg>' +
+        '<h2>Sesi selesai</h2><div class="pbig ' + cls + '">' + fmtClock(du) + '</div>' +
+        '<p>' + (diff <= 0 ? 'Di bawah target ' + fmtHM(tg) + ', lebih cepat ' + fmtHM(-diff) + '.' : 'Lewat target ' + fmtHM(tg) + ' sebesar ' + fmtHM(diff) + '.') + '</p>' +
+        '<div class="btnrow"><button type="button" class="btn" data-act="pundo">Batalkan</button><button type="button" class="btn primary" data-act="sclose">Oke</button></div>';
+    },
+    click: function (act) { if (act === 'pundo') { x.end = 0; save(); closeSheet(); render(); } }
+  });
+}
+function saveLog() {
+  var ex = exById(ui.open), d = ui.draft; if (!ex || d.reps == null || !(d.weight > 0)) return;
+  var prev = null;
+  S.logs = S.logs.filter(function (l) { if (l.ex === ex.id && l.date === ui.day) { prev = l; return false; } return true; });
+  var entry = { id: uid(), date: ui.day, ex: ex.id, weight: d.weight, reps: d.reps, pos: ex.pos, createdAt: Date.now() };
+  if (ex.sides === 2) { entry.rr = d.rr; entry.rl = d.rl; entry.reps = Math.min(d.rr, d.rl); }
+  S.logs.push(entry);
+  var oldW = ex.weight; ex.weight = d.weight; ex.st = '';
+  S.days[ui.day] = 'gym'; delete S.skips[skipKey(ui.day, ex.id)];
+  if (ui.day === todayIso() && !S.sessions[ui.day]) { S.sessions[ui.day] = { start: Date.now(), end: 0 }; autoStarted = true; }
+  save();
+  var st = statusOf(entry.reps), msg = ex.name + ': ' + kg(d.weight) + ' kg × ' + repsTxt(entry) + (st === 'up' ? ' → naik beban' : st === 'ok' ? ' ✓' : ' ↓');
+  ui.open = null; ui.draft = null; render();
+  if (ui.day === todayIso()) startRest(restFor(ex));
+  toast(msg, function () {
+    S.logs = S.logs.filter(function (l) { return l.id !== entry.id; }); if (prev) S.logs.push(prev); ex.weight = oldW; save(); stopRest(); render();
+  });
+}
+function bindClicks() {
+  $('#tabs').addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (!b) return; ui.tab = b.getAttribute('data-tab'); ui.open = null; ui.draft = null; render(); toTop(); });
+  $('#btnAdd').onclick = function () { exSheet(null); };
+  $('#btnDays').onclick = function () { daysSheet(); };
+  $('#sessBadge').onclick = function () { ui.tab = 'latihan'; ui.day = todayIso(); ui.open = null; render(); toTop(); };
+  $('#ctl').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-act]'); if (!b) return; var a = b.getAttribute('data-act');
+    if (a === 'dprev') { ui.day = addDays(ui.day, -1); ui.open = null; render(); } else if (a === 'dnext') { ui.day = addDays(ui.day, 1); ui.open = null; render(); }
+    else if (a === 'dnow') { ui.day = todayIso(); ui.open = null; render(); } else if (a === 'hm') { ui.hmode = b.getAttribute('data-v'); render(); toTop(); }
+  });
+  $('#ctl').addEventListener('change', function (e) { if (e.target.id === 'dayPick' && /^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) { ui.day = e.target.value; ui.open = null; render(); } });
+  $('#timer').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-t]'); if (!b) return;
+    if (b.getAttribute('data-t') === 'skip') stopRest(); else if (rest) { rest.end += 15000; rest.total += 15; rest.fired = false; drawTimer(); }
+  });
+  var app = $('#app');
+  app.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-act]'); if (!b) return; var a = b.getAttribute('data-act'), id = b.getAttribute('data-id');
+    if (a === 'sstart') { startSession(false); render(); }
+    else if (a === 'sfinish') {
+      var sx0 = sess(ui.day); if (!sx0 || sx0.end) return; sx0.end = Date.now(); ui.earlyArmed = false; save(); render();
+      finishPop(sx0);
+    }
+    else if (a === 'searly') {
+      var sx1 = sess(ui.day); if (!sx1 || sx1.end) return;
+      if (!ui.earlyArmed) { ui.earlyArmed = true; render(); return; }
+      sx1.end = Date.now(); ui.earlyArmed = false; save(); render(); toast('Sesi diakhiri: ' + fmtClock(sx1.end - sx1.start), function () { sx1.end = 0; save(); render(); });
+    }
+    else if (a === 'sedit') sessEditSheet(ui.day);
+    else if (a === 'prio') {
+      var pk = b.getAttribute('data-v'), old = S.settings.prio.slice(), pl = S.settings.prio.slice(), pi = pl.indexOf(pk); if (pi >= 0) pl.splice(pi, 1); else pl.push(pk);
+      S.settings.prio = ['chest', 'arm', 'lats'].filter(function (k) { return pl.indexOf(k) >= 0; }); save();
+      if (S.settings.prio.length) arrangeNow('Prioritas diterapkan', old); else { render(); toast('Prioritas dimatikan. Urutan tidak diubah'); }
+    }
+    else if (a === 'prioapply') arrangeNow('Urutan disusun ulang');
+    else if (a === 'priorestore') { var po = S.ex.map(function (e) { return e.id; }), pv = S.prevOrder.slice(); setOrder(pv); S.prevOrder = []; save(); render(); toast('Urutan sebelumnya dikembalikan', function () { setOrder(po); S.prevOrder = pv; save(); render(); }); }
+    else if (a === 'cstart') caliStart();
+    else if (a === 'cpause') caliPause();
+    else if (a === 'cresume') caliResume();
+    else if (a === 'clap') caliLap();
+    else if (a === 'cunlap') { var ca1 = caliActive(); if (ca1 && ca1.r.status === 'run' && ca1.r.rounds) { var rr = ca1.r; if (rr.laps.length >= rr.rounds) rr.laps.pop(); rr.rounds--; save(); caliDraw(true); } }
+    else if (a === 'cadj') { caliAdjust(ui.day, +b.getAttribute('data-v')); render(); }
+    else if (a === 'cedit') caliEditSheet();
+    else if (a === 'cfinish') { var ca2 = caliActive(); if (ca2 && ca2.r.status === 'pause') { ca2.r.status = 'done'; save(); caliSchedule(); render(); toast('Disimpan: ' + ca2.r.rounds + ' ronde'); } }
+    else if (a === 'creset') {
+      var cd = ui.day, snap = S.cali[cd], dm0 = S.days[cd]; if (!snap) return;
+      delete S.cali[cd]; S.days[cd] = 'cali'; save(); caliSchedule(); render();
+      toast('Catatan calisthenics dihapus', function () { S.cali[cd] = snap; S.days[cd] = dm0 || 'cali'; save(); caliSchedule(); render(); });
+    }
+    else if (a === 'skip') {
+      var sx = exById(ui.open), sk = skipKey(ui.day, ui.open); if (!sx) return;
+      S.skips[sk] = 1; if (ui.day === todayIso() && !S.sessions[ui.day]) S.sessions[ui.day] = { start: Date.now(), end: 0 }; ui.open = null; ui.draft = null; save(); render(); toast(sx.name + ' dilewati', function () { delete S.skips[sk]; save(); render(); });
+    }
+    else if (a === 'unskip') { delete S.skips[skipKey(ui.day, ui.open)]; save(); render(); }
+    else if (a === 'setmode') { var mv = b.getAttribute('data-v'); if (hasCali(ui.day) && mv !== 'cali') return; if (mv) S.days[ui.day] = mv; else delete S.days[ui.day]; ui.open = null; ui.draft = null; save(); render(); }
+    else if (a === 'pm') { ui.pmode = b.getAttribute('data-v'); render(); toTop(); }
+    else if (a === 'pprev' || a === 'pnext') { var dir = a === 'pnext' ? 1 : -1; ui.pref = ui.pmode === 'minggu' ? addDays(ui.pref, 7 * dir) : monthShift(ui.pref, dir); render(); toTop(); }
+    else if (a === 'pnow') { ui.pref = todayIso(); render(); toTop(); }
+    else if (a === 'goday') { ui.day = b.getAttribute('data-d'); ui.tab = 'latihan'; ui.open = null; render(); toTop(); }
+    else if (a === 'open') openExercise(id);
+    else if (a === 'reps') {
+      var v = +b.getAttribute('data-v'), sd = b.getAttribute('data-side'), dr = ui.draft;
+      if (sd === 'r') dr.rr = v; else if (sd === 'l') dr.rl = v; else dr.reps = v;
+      if (sd) dr.reps = dr.rr != null && dr.rl != null ? Math.min(dr.rr, dr.rl) : null;
+      render();
+    }
+    else if (a === 'wm' || a === 'wp') { var ex = exById(ui.open), st = stepOf(ex); ui.draft.weight = Math.max(0, rnd(ui.draft.weight + (a === 'wp' ? st : -st))); render(); }
+    else if (a === 'apply') { ui.draft.weight = parseKg(b.getAttribute('data-w')); render(); }
+    else if (a === 'save') saveLog();
+    else if (a === 'dellog') {
+      var ex2 = exById(ui.open), snap = null; S.logs = S.logs.filter(function (l) { if (l.ex === ex2.id && l.date === ui.day) { snap = l; return false; } return true; });
+      ui.open = null; ui.draft = null; save(); render(); toast('Catatan dihapus', function () { if (snap) { S.logs.push(snap); save(); render(); } });
+    }
+    else if (a === 'hist') histSheet(id);
+    else if (a === 'editex') exSheet(id);
+    else if (a === 'up') moveEx(id, -1); else if (a === 'down') moveEx(id, 1);
+    else if (a === 'nudge-go') { ui.tab = 'atur'; render(); toTop(); } else if (a === 'nudge-x') { ui.nudgeOff = true; render(); }
+    else if (a === 'bk') deliver('gym-tracker-' + todayIso() + '.json', exportText(), 'application/json').then(function (ok) { if (ok) { markBackup(); render(); toast('Cadangan dibuat'); } });
+    else if (a === 'bkc') copyText(exportText()).then(function (ok) { if (ok) { markBackup(); render(); } toast(ok ? 'Teks cadangan disalin' : 'Gagal menyalin, pakai Simpan cadangan'); });
+    else if (a === 'rs') restoreSheet();
+    else if (a === 'csv') deliver('gym-tracker-' + todayIso() + '.csv', csvText(), 'text/csv;charset=utf-8').then(function (ok) { if (ok) toast('CSV siap'); });
+    else if (a === 'wipe') { if (!wipeArmed) { wipeArmed = true; render(); return; } wipeArmed = false; S = defaults(); S.ex = []; save(); ui.open = null; render(); toast('Semua data dihapus'); }
+    else if (a === 'reseed') { var have = {}; S.ex.forEach(function (e) { have[e.name.toLowerCase()] = 1; }); defaults().ex.forEach(function (e) { if (!have[e.name.toLowerCase()]) S.ex.push(e); }); save(); render(); toast('Alat awal dilengkapi'); }
+  });
+  app.addEventListener('pointerdown', function (e) {
+    var g = e.target.closest && e.target.closest('[data-grip]'); if (!g || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    e.preventDefault(); dragStart(e, g);
+  });
+  app.addEventListener('pointermove', function (e) { if (drag && e.pointerId === drag.pid) { drag.lastY = e.clientY; e.preventDefault(); } });
+  app.addEventListener('pointerup', function (e) { if (drag && e.pointerId === drag.pid) dragEnd(false); });
+  app.addEventListener('pointercancel', function (e) { if (drag && e.pointerId === drag.pid) dragEnd(true); });
+  app.addEventListener('lostpointercapture', function (e) { if (drag && e.pointerId === drag.pid) dragEnd(false); });
+  app.addEventListener('contextmenu', function (e) { if (e.target.closest && e.target.closest('[data-grip]')) e.preventDefault(); });
+  app.addEventListener('input', function (e) {
+    if (e.target.id === 'dW' && ui.draft) { ui.draft.weight = parseKg(e.target.value); refreshDraftUi(); }
+  });
+  app.addEventListener('change', function (e) {
+    var el = e.target, k = el.getAttribute && el.getAttribute('data-set'); if (el.id === 'dW' && ui.draft) { el.value = kg(ui.draft.weight); return; }
+    if (!k) return; var v = el.value, s = S.settings;
+    if (k === 'repMin') { s.repMin = parseInt(v, 10); if (s.repMax < s.repMin) s.repMax = s.repMin; }
+    else if (k === 'repMax') { s.repMax = parseInt(v, 10); if (s.repMin > s.repMax) s.repMin = s.repMax; }
+    else if (k === 'step') s.step = parseFloat(v); else if (k === 'restIso' || k === 'restComp' || k === 'restLeg' || k === 'weekTarget' || k === 'targetMin' || k === 'caliMin') s[k] = parseInt(v, 10); else if (k === 'theme') s.theme = v;
+    save(); render();
+  });
+  var sr = $('#sheetRoot');
+  sr.addEventListener('click', function (e) { var b = e.target.closest('[data-act]'); if (!b) return; var a = b.getAttribute('data-act'); if (a === 'sclose') closeSheet(); else if (a === 'sback') { if (SH && SH.back) SH.back(); } else if (SH && SH.click) SH.click(a, b, e); });
+  sr.addEventListener('input', function (e) { if (SH && SH.input) SH.input(e.target); });
+  sr.addEventListener('change', function (e) { if (SH && SH.change) SH.change(e.target); });
+  sr.addEventListener('focusin', function (e) { var t = e.target; if (!t || !/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return; setTimeout(function () { try { t.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (x) {} }, 380); });
+  app.addEventListener('focusin', function (e) { var t = e.target; if (t && t.id === 'dW') setTimeout(function () { try { t.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (x) {} }, 380); });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && SH) closeSheet(); });
+}
+function tick() {
+  var t = todayIso(); if (t === lastToday) return;
+  if (ui.day === lastToday) ui.day = t; lastToday = t; render();
+}
+function fitView() {
+  var vv = window.visualViewport, h = vv ? vv.height : window.innerHeight, t = vv ? vv.offsetTop : 0, r = document.documentElement;
+  r.style.setProperty('--vvh', Math.round(h) + 'px'); r.style.setProperty('--vvt', Math.round(t) + 'px');
+  r.classList.toggle('kb', window.innerHeight - h > 120);
+  try { if (window.scrollY) window.scrollTo(0, 0); } catch (e) {}
+}
+function boot() {
+  bindClicks(); render(); fitView();
+  setInterval(tick, 30000);
+  caliTick(); caliSchedule();
+  setInterval(function () { caliTick(); updateClock(); var h = $('#sessHint'); if (h && ui.tab === 'latihan') { var l = visibleEx(); h.textContent = sessHint(l, dayCounts(ui.day, l)); } }, 1000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { tick(); if (rest) tickRest(); caliTick(); caliSchedule(); updateClock(); } });
+  window.addEventListener('pageshow', tick); window.addEventListener('focus', tick);
+  window.addEventListener('resize', fitView); window.addEventListener('orientationchange', fitView);
+  document.addEventListener('focusin', function () { setTimeout(fitView, 50); setTimeout(fitView, 350); });
+  document.addEventListener('focusout', function () { setTimeout(fitView, 50); setTimeout(fitView, 350); });
+  if (window.visualViewport) { window.visualViewport.addEventListener('resize', fitView); window.visualViewport.addEventListener('scroll', fitView); }
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(function () {});
+}
+window.__gt = { get S() { return S; }, ui: ui, render: render, statusOf: statusOf, suggestion: suggestion, stateOf: stateOf, sanitize: sanitize, exportText: exportText, csvText: csvText, restore: doRestore, setToday: function (s) { todayOverride = s; lastToday = s; }, startRest: startRest, getRest: function () { return rest; }, tick: tick,
+  prio: { mgOf: mgOf, mgEff: mgEff, optimal: optimalOrder, arrange: arrangeNow, score: orderScore },
+  cali: { rec: caliRec, active: caliActive, elapsed: caliElapsed, start: caliStart, pause: caliPause, resume: caliResume, lap: caliLap, adjust: caliAdjust, setTarget: caliSetTarget, tick: caliTick } };
+boot();
+})();
+</script>
+</body>
+</html>
